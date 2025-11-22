@@ -82,10 +82,18 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+<div className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-3xl font-bold mb-8">Welcome, {shop.publicName}!</h2>
-        <p className="mb-4">Shop ID: {shop.id}</p>
-        <p>Slug: {shop.slug}</p>
+
+        <div className="space-y-4">
+          <a href="/dashboard/products" className="block bg-white p-6 rounded-lg shadow">
+            Produkte
+          </a>
+
+          <a href="/dashboard/orders" className="block bg-white p-6 rounded-lg shadow">
+            Bestellungen
+          </a>
+        </div>
       </div>
     </div>
   );
