@@ -24,11 +24,14 @@ export class ProductsService {
     });
   }
 
-  async getProductsByShop(shopId: number) {
-    return (this.prisma as any).product.findMany({
-      where: { shopId, isActive: true },
-    });
-  }
+async getProductsByShop(shopId: number) {
+  return (this.prisma as any).product.findMany({
+    where: {
+      shopId: shopId,
+      isActive: true,
+    },
+  });
+}
 
   async getProductById(productId: number) {
     const product = await (this.prisma as any).product.findUnique({
