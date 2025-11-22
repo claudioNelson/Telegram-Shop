@@ -1,0 +1,199 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ENUMS ============
+enum UserRole {
+  ADMIN
+  SHOP_OWNER
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  CREATED
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+// ============ USERS (für Admin-Panel) ============
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  passwordHash String
+  role      UserRole  @default(SHOP_OWNER)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  shops     Shop[]
+
+  @@map("users")
+}
+
+// ============ SHOPS (Multi-Mandanten) ============
+model Shop {
+  id            Int       @id @default(autoincrement())
+  name          String
+  publicName    String
+  slug          String    @unique
+  ownerUserId   Int
+  imprintText   String?   @db.Text
+  privacyPolicyText String? @db.Text
+  email         String?
+  
+  // Neue Wallet-Felder
+  btcAddress    String?   // Bitcoin
+  ethAddress    String?   // Ethereum
+  ltcAddress    String?   // Litecoin
+  usdtAddress   String?   // USDT (Ethereum)
+  xmrAddress    String?   // Monero
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  owner         User      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  bots          Bot[]
+  products      Product[]
+  customers     Customer[]
+  orders        Order[]
+
+  @@map("shops")
+}
+
+// ============ BOTS (pro Shop sein eigener Bot) ============
+model Bot {
+  id                    Int       @id @default(autoincrement())
+  shopId                Int
+  telegramBotToken      String    @unique
+  telegramBotUsername   String
+  welcomeMessage        String    @db.Text
+  languageDefault       String    @default("de")
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  shop                  Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@map("bots")
+}
+
+// ============ PRODUCTS ============
+model Product {
+  id            Int       @id @default(autoincrement())
+  shopId        Int
+  title         String
+  description   String    @db.Text
+  priceCents    Int       // In Cents (z.B. 1999 = 19,99€)
+  currency      String    @default("EUR")
+  isDigital     Boolean   @default(false)
+  stockQuantity Int?      // nullable für digitale Produkte
+  isActive      Boolean   @default(true)
+  imageUrl      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  shop          Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
+
+  @@map("products")
+}
+
+// ============ CUSTOMERS (Telegram-Nutzer) ============
+model Customer {
+  id                Int       @id @default(autoincrement())
+  shopId            Int
+  telegramUserId    BigInt    // <-- CHANGE INT to BigInt
+  telegramUsername  String?
+  firstName         String?
+  lastName          String?
+  email             String?
+  shippingAddressJson String?  @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  shop              Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orders            Order[]
+
+  @@map("customers")
+}
+
+// ============ ORDERS ============
+model Order {
+  id                        Int       @id @default(autoincrement())
+  shopId                    Int
+  customerId                Int
+  status                    OrderStatus @default(PENDING_PAYMENT)
+  totalAmountCents          Int
+  currency                  String    @default("EUR")
+  isDigital                 Boolean   @default(false) // true wenn alle Items digital
+  shippingAddressJson       String?   @db.Text
+  paymentProvider           String    @default("stripe")
+  paymentProviderSessionId  String?   // z.B. Stripe Checkout Session ID
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  // Relations
+  shop                      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer                  Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items                     OrderItem[]
+  payment                   Payment?
+
+  @@map("orders")
+}
+
+// ============ ORDER ITEMS ============
+model OrderItem {
+  id              Int       @id @default(autoincrement())
+  orderId         Int
+  productId       Int
+  quantity        Int
+  unitPriceCents  Int
+  totalPriceCents Int
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+// ============ PAYMENTS (Stripe) ============
+model Payment {
+  id                      Int       @id @default(autoincrement())
+  orderId                 Int       @unique
+  provider                String    @default("stripe")
+  providerPaymentIntentId String?
+  status                  PaymentStatus @default(CREATED)
+  amountCents             Int
+  currency                String    @default("EUR")
+  rawWebhookPayloadJson   String?   @db.Text
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  // Relations
+  order                   Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
