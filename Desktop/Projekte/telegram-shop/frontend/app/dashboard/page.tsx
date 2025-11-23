@@ -71,17 +71,21 @@ export default function DashboardPage() {
         </div>
 
         <h2 className="text-2xl font-bold mb-6">Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <a href="/dashboard/products" className="bg-white p-8 rounded-lg shadow hover:shadow-xl">
-            <h3 className="text-xl font-bold mb-2">Products</h3>
+            <h3 className="text-xl font-bold mb-2">📦 Products</h3>
             <p className="text-gray-600">Manage products</p>
           </a>
           <a href="/dashboard/orders" className="bg-white p-8 rounded-lg shadow hover:shadow-xl">
-            <h3 className="text-xl font-bold mb-2">Orders</h3>
+            <h3 className="text-xl font-bold mb-2">📋 Orders</h3>
             <p className="text-gray-600">View orders</p>
           </a>
+          <a href="/dashboard/bots" className="bg-white p-8 rounded-lg shadow hover:shadow-xl">
+            <h3 className="text-xl font-bold mb-2">🤖 Bot Manager</h3>
+            <p className="text-gray-600">Manage bots</p>
+          </a>
           <a href="/dashboard/settings" className="bg-white p-8 rounded-lg shadow hover:shadow-xl">
-            <h3 className="text-xl font-bold mb-2">Settings</h3>
+            <h3 className="text-xl font-bold mb-2">⚙️ Settings</h3>
             <p className="text-gray-600">Configure</p>
           </a>
         </div>

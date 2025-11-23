@@ -33,33 +33,46 @@ export class BotsService {
       throw new BadRequestException('Bot name is required');
     }
 
-    // Erstelle Bot in DB
-    const bot = await (this.prisma as any).bot.create({
-      data: {
-        name: data.name,
-        telegramBotToken: data.telegramBotToken,
-        telegramBotUsername: data.telegramBotUsername || '',
-        welcomeMessage: data.welcomeMessage || `Willkommen in ${data.name}! 👋`,
-        shopId,
-        isActive: true,
-      },
-    });
-
-    // NEU: Initialisiere Bot zur Laufzeit
-    try {
-      await this.telegramService.initBotDynamic(bot);
-      console.log(`✅ Bot erstellt und gestartet: ${bot.name}`);
-    } catch (error) {
-      console.error(`❌ Bot-Start fehlgeschlagen:`, error);
-      // Deaktiviere Bot wenn Start fehlschlägt
-      await (this.prisma as any).bot.update({
-        where: { id: bot.id },
-        data: { isActive: false },
-      });
-      throw new BadRequestException('Invalid Telegram bot token or bot initialization failed');
+    // Validiere dass Bot-Username vorhanden ist
+    if (!data.telegramBotUsername) {
+      throw new BadRequestException('Telegram bot username is required');
     }
 
-    return bot;
+    try {
+      // Erstelle Bot in DB
+      const bot = await (this.prisma as any).bot.create({
+        data: {
+          name: data.name,
+          telegramBotToken: data.telegramBotToken,
+          telegramBotUsername: data.telegramBotUsername,
+          welcomeMessage: data.welcomeMessage || `Willkommen in ${data.name}! 👋`,
+          shopId,
+          isActive: true,
+        },
+      });
+
+      // Initialisiere Bot zur Laufzeit
+      try {
+        await this.telegramService.initBotDynamic(bot);
+        console.log(`✅ Bot erstellt und gestartet: ${bot.name}`);
+      } catch (initError) {
+        console.error(`❌ Bot-Start fehlgeschlagen:`, initError);
+        // Deaktiviere Bot wenn Start fehlschlägt
+        await (this.prisma as any).bot.update({
+          where: { id: bot.id },
+          data: { isActive: false },
+        });
+        throw new BadRequestException('Invalid Telegram bot token or bot initialization failed');
+      }
+
+      return bot;
+    } catch (error: any) {
+      // Unique constraint (Token schon in Benutzung)
+      if (error.code === 'P2002') {
+        throw new BadRequestException('This Telegram bot token is already in use');
+      }
+      throw error;
+    }
   }
 
   /**
