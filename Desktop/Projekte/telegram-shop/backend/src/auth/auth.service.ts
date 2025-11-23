@@ -11,12 +11,12 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
- async register(email: string, password: string, role: string = 'SHOP_OWNER') {
-  console.log('Prisma service:', this.prisma);
-  
-  const existingUser = await (this.prisma as any).user.findUnique({
-    where: { email },
-  });
+  async register(email: string, password: string, role: string = 'SHOP_OWNER') {
+    console.log('Prisma service:', this.prisma);
+
+    const existingUser = await (this.prisma as any).user.findUnique({
+      where: { email },
+    });
 
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
@@ -31,6 +31,19 @@ export class AuthService {
         email,
         passwordHash: hashedPassword,
         role,
+      },
+    });
+
+    // Erstelle automatisch einen Shop für den neuen User
+    const shopName = email.split('@')[0]; // z.B. "john" aus "john@example.com"
+    const shopSlug = this.generateUniqueSlug(shopName);
+
+    await (this.prisma as any).shop.create({
+      data: {
+        name: shopName,
+        publicName: shopName,
+        slug: shopSlug,
+        ownerUserId: user.id,
       },
     });
 
@@ -77,5 +90,14 @@ export class AuthService {
         role: user.role,
       },
     };
+  }
+
+  /**
+   * Generiere einen eindeutigen Slug
+   * Füge Timestamp hinzu um Collisions zu vermeiden
+   */
+  private generateUniqueSlug(baseName: string): string {
+    const timestamp = Date.now().toString().slice(-6); // Letzten 6 Ziffern
+    return `${baseName}-${timestamp}`.toLowerCase();
   }
 }

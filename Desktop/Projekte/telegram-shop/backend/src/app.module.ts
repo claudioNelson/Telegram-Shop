@@ -10,10 +10,21 @@ import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { TelegramModule } from './telegram/telegram.module';
+import { TwoFaModule } from './two-fa/two-fa.module';
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
-  imports: [AuthModule, ShopsModule, ProductsModule, BotsModule, CartModule, OrdersModule, PaymentsModule, TelegramModule],
+  imports: [
+    AuthModule,
+    ShopsModule,
+    ProductsModule,
+    BotsModule,
+    CartModule,
+    OrdersModule,
+    PaymentsModule,
+    TelegramModule,
+    TwoFaModule,
+  ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })

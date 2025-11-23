@@ -27,10 +27,10 @@ export class ProductsService {
 async getProductsByShop(shopId: number) {
   return (this.prisma as any).product.findMany({
     where: {
-      shopId: shopId,
+      shopId: shopId,   
       isActive: true,
-    },
-  });
+    }
+  })
 }
 
   async getProductById(productId: number) {
