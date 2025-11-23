@@ -133,7 +133,7 @@ export class TwoFaController {
   @Post('disable')
   @UseGuards(AuthGuard('jwt'))
   async disableTwoFa(@Request() req: any) {
-    const userId = req.user.sub;
+    const userId = req.user.userId;
     if (!userId) {
       throw new BadRequestException('User not authenticated');
     }
