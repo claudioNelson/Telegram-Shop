@@ -16,6 +16,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      console.log('Logging in...');
       const response = await fetch('http://localhost:3001/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -23,6 +24,7 @@ export default function LoginPage() {
       });
 
       const data = await response.json();
+      console.log('Login response:', data);
 
       if (!response.ok) {
         setError(data.message || 'Login failed');
@@ -30,78 +32,79 @@ export default function LoginPage() {
         return;
       }
 
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Neue 2FA Logik
+      if (data.requiresTwoFa) {
+        // 2FA ist aktiviert - speichere Challenge und gehe zur 2FA Seite
+        sessionStorage.setItem('twoFaUserId', data.userId);
+        sessionStorage.setItem('twoFaChallengeId', data.challengeId);
+        sessionStorage.setItem('encryptedChallenge', data.encryptedChallenge);
+        sessionStorage.setItem('userEmail', data.email);
+        
+        console.log('2FA required - redirecting to 2FA page');
+        router.push('/auth/two-fa-challenge');
+      } else {
+        // Keine 2FA - normaler Login
+        console.log('Saving token...');
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('user', JSON.stringify(data.user));
 
-      router.push('/dashboard');
+        console.log('Redirecting to dashboard...');
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message || 'Login error');
       setLoading(false);
+      console.error('Login error:', err);
     }
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 fade-in">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-blue-600 mb-2">Telegram Shop</h1>
-            <p className="text-gray-600">Admin Dashboard</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow">
+        <h1 className="text-2xl font-bold mb-6 text-center">Telegram Shop</h1>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg"
+              required
+            />
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
-                placeholder="your@email.com"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white font-medium py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
-          </form>
-
-          <div className="text-center text-gray-600 text-sm mt-6">
-            <p>Demo: neuer2@test.com / password123</p>
-            <p className="mt-4">
-              Noch kein Konto?{' '}
-              <a href="/register" className="text-blue-600 hover:underline font-medium">
-                Jetzt registrieren
-              </a>
-            </p>
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg"
+              required
+            />
           </div>
+
+          {error && <div className="text-red-500 text-sm">{error}</div>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <a href="/register" className="text-blue-600 hover:text-blue-800">
+              Register here
+            </a>
+          </p>
         </div>
       </div>
     </div>
