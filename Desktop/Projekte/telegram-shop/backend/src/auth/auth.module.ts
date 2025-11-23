@@ -10,7 +10,7 @@ import { TwoFaModule } from '../two-fa/two-fa.module';  // ← IMPORT!
 @Module({
   imports: [
     PassportModule,
-    TwoFaModule,  // ← HINZUFÜGEN!
+    TwoFaModule,  
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-secret-key',
       signOptions: { expiresIn: '15m' },

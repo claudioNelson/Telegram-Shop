@@ -318,4 +318,83 @@ private async handleCheckout(bot: TelegramBot, chatId: number, shopId: number, u
   getAllBots(): Map<number, TelegramBot> {
     return this.bots;
   }
+  /**
+ * Initialisiere einen Bot zur Laufzeit (dynamisch)
+ * Wird aufgerufen wenn User neuen Bot erstellt
+ */
+async initBotDynamic(botData: any): Promise<void> {
+  try {
+    // Teste ob Token gültig ist
+    const bot = new TelegramBot(botData.telegramBotToken, { polling: true });
+    
+    console.log(`[Bot] Initialisiere Bot für Shop ${botData.shopId}: ${botData.name}`);
+
+    // /start command
+    bot.onText(/\/start/, async (msg) => {
+      const chatId = msg.chat.id;
+      const userId = msg.from.id;
+
+      let customer = await (this.prisma as any).customer.findFirst({
+        where: {
+          shopId: botData.shopId,
+          telegramUserId: userId,
+        },
+      });
+
+      if (!customer) {
+        customer = await (this.prisma as any).customer.create({
+          data: {
+            shopId: botData.shopId,
+            telegramUserId: userId,
+            telegramUsername: msg.from.username,
+            firstName: msg.from.first_name,
+            lastName: msg.from.last_name,
+          },
+        });
+      }
+
+      const welcomeMessage = botData.welcomeMessage || `Willkommen in ${botData.name}! 👋`;
+      bot.sendMessage(chatId, welcomeMessage, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🛍 Produkte ansehen', callback_data: 'view_products' }],
+            [{ text: '📦 Meine Bestellungen', callback_data: 'view_orders' }],
+            [{ text: 'ℹ️ Infos', callback_data: 'view_info' }],
+          ],
+        },
+      });
+    });
+
+    // Callback Handler (gleich wie in initializeBot)
+    bot.on('callback_query', async (query) => {
+      const chatId = query.message.chat.id;
+      const action = query.data;
+      const userId = query.from.id;
+
+      if (action === 'view_products') {
+        await this.handleViewProducts(bot, chatId, botData.shopId);
+      } else if (action === 'view_orders') {
+        await this.handleViewOrders(bot, chatId, botData.shopId, userId);
+      } else if (action === 'view_info') {
+        await this.handleViewInfo(bot, chatId, botData.shopId);
+      } else if (action === 'view_cart') {
+        await this.handleViewCart(bot, chatId, botData.shopId, userId);
+      } else if (action.startsWith('add_to_cart_')) {
+        const productId = parseInt(action.replace('add_to_cart_', ''));
+        this.cartService.addToCart(botData.shopId, userId, productId, 1);
+        bot.sendMessage(chatId, '✅ Produkt zum Warenkorb hinzugefügt!');
+      } else if (action === 'checkout') {
+        await this.handleCheckout(bot, chatId, botData.shopId, userId);
+      }
+    });
+
+    // Speichere Bot in Map
+    this.bots.set(botData.shopId, bot);
+    
+    console.log(`✅ Bot '${botData.name}' ist jetzt online!`);
+  } catch (error) {
+    console.error(`❌ Bot-Initialisierung fehler:`, error);
+    throw error;
+  }
+}
 }
