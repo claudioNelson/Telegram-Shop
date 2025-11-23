@@ -1,4 +1,3 @@
-// src/auth/auth.module.ts
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -6,17 +5,18 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { PrismaService } from '../prisma/prisma.service';
-import { TwoFaService } from '../two-fa/two-fa.service';
+import { TwoFaModule } from '../two-fa/two-fa.module';  // ← IMPORT!
 
 @Module({
   imports: [
     PassportModule,
+    TwoFaModule,  // ← HINZUFÜGEN!
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-secret-key',
       signOptions: { expiresIn: '15m' },
     }),
   ],
-  providers: [AuthService, JwtStrategy, PrismaService, TwoFaService],
+  providers: [AuthService, JwtStrategy, PrismaService],
   controllers: [AuthController],
   exports: [AuthService, JwtModule, PrismaService],
 })

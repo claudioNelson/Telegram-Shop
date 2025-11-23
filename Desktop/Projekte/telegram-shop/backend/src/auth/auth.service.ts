@@ -2,6 +2,7 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { TwoFaService } from '../two-fa/two-fa.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private twoFaService: TwoFaService,
   ) {}
 
   async register(email: string, password: string, role: string = 'SHOP_OWNER') {
@@ -60,6 +62,25 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // ===== NEU: 2FA Prüfung =====
+    const twoFaEnabled = await this.twoFaService.isTwoFaEnabled(user.id);
+
+    if (twoFaEnabled) {
+      // 2FA aktiviert → Challenge generieren statt Token
+      const { challengeId, encryptedChallenge } =
+        await this.twoFaService.generateChallenge(user.id);
+
+      return {
+        requiresTwoFa: true,
+        userId: user.id,
+        email: user.email,
+        challengeId,
+        encryptedChallenge,
+        message: 'Please sign the challenge with your PGP private key',
+      };
+    }
+
+    // Keine 2FA → Token wie bisher
     return this.generateTokens(user);
   }
 

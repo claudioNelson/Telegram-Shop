@@ -13,7 +13,7 @@ import { TwoFaService } from './two-fa.service';
 
 @Controller('api/two-fa')
 export class TwoFaController {
-  constructor(private twoFaService: TwoFaService) { }
+  constructor(private twoFaService: TwoFaService) {}
 
   /**
    * POST /api/two-fa/upload-key
@@ -45,12 +45,11 @@ export class TwoFaController {
   /**
    * POST /api/two-fa/generate-challenge
    * Backend generiert verschlüsselte Challenge
-   * Rückgabe: challengeId + encryptedChallenge
    */
   @Post('generate-challenge')
   @UseGuards(AuthGuard('jwt'))
   async generateChallenge(@Request() req: any) {
-    const userId = req.user.userId;  // ← NICHT sub!
+    const userId = req.user.userId;
     if (!userId) {
       throw new BadRequestException('User not authenticated');
     }
@@ -62,58 +61,60 @@ export class TwoFaController {
       success: true,
       challengeId,
       encryptedChallenge,
-      message: 'Challenge generated. User needs to decrypt and sign it.',
+      message: 'Challenge generated',
     };
   }
 
   /**
-   * POST /api/two-fa/verify-signature
-   * User sendet signierte Challenge zurück
-   * Rückgabe: JWT Token wenn erfolgreich
+   * POST /api/two-fa/verify-challenge
+   * User sendet entschlüsselte Challenge zurück
    */
-  @Post('verify-signature')
+  @Post('verify-challenge')
   @HttpCode(200)
-  async verifySignature(
+  async verifyChallengeOnly(
     @Body()
     body: {
       userId: number;
       challengeId: string;
-      challenge: string;
-      signature: string;
+      decryptedChallenge: string;
     },
   ) {
-    if (
-      !body.userId ||
-      !body.challengeId ||
-      !body.challenge ||
-      !body.signature
-    ) {
+    if (!body.userId || !body.challengeId || !body.decryptedChallenge) {
       throw new BadRequestException(
-        'userId, challengeId, challenge, and signature are required',
+        'userId, challengeId, and decryptedChallenge are required',
       );
     }
 
-    const isValid = await this.twoFaService.verifySignature(
+    const isValid = await this.twoFaService.verifyChallengeOnly(
       body.userId,
       body.challengeId,
-      body.challenge,
-      body.signature,
+      body.decryptedChallenge,
     );
 
     if (!isValid) {
-      throw new BadRequestException('Signature verification failed');
+      throw new BadRequestException('Challenge verification failed');
     }
+
+    // Generiere JWT Token
+    const token = await this.twoFaService.generateLoginToken(body.userId);
 
     return {
       success: true,
-      message: 'Signature verified successfully. Login successful!',
+      message: 'Challenge verified! You are now logged in.',
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken,
+      user: token.user,
     };
   }
 
+  /**
+   * GET /api/two-fa/status
+   * Prüfe ob 2FA aktiviert ist
+   */
   @Get('status')
   @UseGuards(AuthGuard('jwt'))
   async getTwoFaStatus(@Request() req: any) {
-    const userId = req.user.userId;  // ← NICHT sub!
+    const userId = req.user.userId;
     if (!userId) {
       throw new BadRequestException('User not authenticated');
     }

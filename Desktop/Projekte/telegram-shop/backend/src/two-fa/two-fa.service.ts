@@ -2,24 +2,50 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import * as openpgp from 'openpgp';
 import * as crypto from 'crypto';
+import { JwtService } from '@nestjs/jwt';
+
+// In-Memory Challenge Storage
+interface StoredChallenge {
+  userId: number;
+  challenge: string;
+  createdAt: number;
+}
 
 @Injectable()
 export class TwoFaService {
-  constructor(private prisma: PrismaService) {}
+  private challengeStore = new Map<string, StoredChallenge>();
+  private readonly CHALLENGE_TTL = 5 * 60 * 1000;
+
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,  // ← NEUE ZEILE!
+  ) {
+    setInterval(() => this.cleanupExpiredChallenges(), 60 * 1000);
+  }
+
+  /**
+   * Cleanup abgelaufene Challenges
+   */
+  private cleanupExpiredChallenges(): void {
+    const now = Date.now();
+    for (const [challengeId, data] of this.challengeStore.entries()) {
+      if (now - data.createdAt > this.CHALLENGE_TTL) {
+        this.challengeStore.delete(challengeId);
+      }
+    }
+  }
 
   /**
    * SCHRITT 1: User uploaded Public Key
    * Speichere Public Key und aktiviere 2FA
    */
   async uploadPublicKey(userId: number, publicKeyPem: string): Promise<void> {
-    // Validiere, dass es ein gültiger PGP Public Key ist
     try {
       await openpgp.readKey({ armoredKey: publicKeyPem });
     } catch (error) {
       throw new BadRequestException('Invalid PGP Public Key format');
     }
 
-    // Speichere oder update TwoFaConfig
     await (this.prisma as any).twoFaConfig.upsert({
       where: { userId },
       update: {
@@ -36,13 +62,12 @@ export class TwoFaService {
 
   /**
    * SCHRITT 2: Backend generiert Challenge
-   * Rückgabe: Challenge (wird verschlüsselt und an User geschickt)
+   * Rückgabe: Encrypted Challenge
    */
   async generateChallenge(userId: number): Promise<{
     challengeId: string;
     encryptedChallenge: string;
   }> {
-    // Hole 2FA Config
     const twoFaConfig = await (this.prisma as any).twoFaConfig.findUnique({
       where: { userId },
     });
@@ -55,10 +80,14 @@ export class TwoFaService {
     const challenge = crypto.randomBytes(32).toString('hex');
     const challengeId = crypto.randomBytes(16).toString('hex');
 
-    // Speichere Challenge temporär (TTL: 5 Minuten)
-    // Alternativ: In Memory-Store oder Redis verwenden
-    // Hier nehmen wir vereinfacht an, dass es im Session-Store gespeichert wird
-    // In Produktion: Redis oder DB mit Expiration
+    // Speichere Challenge im In-Memory Store
+    this.challengeStore.set(challengeId, {
+      userId,
+      challenge,
+      createdAt: Date.now(),
+    });
+
+    console.log(`[2FA] Challenge generated - ID: ${challengeId}, User: ${userId}`);
 
     // Verschlüssele Challenge mit User's Public Key
     const publicKey = await openpgp.readKey({
@@ -71,68 +100,51 @@ export class TwoFaService {
     });
 
     return {
-      challengeId, // ID für Verifizierung später
-      encryptedChallenge: encrypted as string, // Verschlüsselte Challenge
+      challengeId,
+      encryptedChallenge: encrypted as string,
     };
   }
 
   /**
-   * SCHRITT 3: User signiert Challenge mit Private Key
-   * Rückgabe: Signature String
-   * 
-   * Frontend Flow:
-   * 1. User empfängt encryptedChallenge
-   * 2. User entschlüsselt mit eigenem Private Key
-   * 3. User signiert entschlüsselte Challenge
-   * 4. Sendet Signature zum Backend
+   * SCHRITT 3 (VEREINFACHT): Verifiziere nur die Challenge
+   * User sendet die entschlüsselte Challenge zurück
+   * Backend vergleicht mit gespeichert Challenge
    */
-  async verifySignature(
-    userId: number,
-    challengeId: string,
-    challenge: string,
-    signature: string,
-  ): Promise<boolean> {
-    // Hole 2FA Config
-    const twoFaConfig = await (this.prisma as any).twoFaConfig.findUnique({
-      where: { userId },
-    });
+async verifyChallengeOnly(
+  userId: number,
+  challengeId: string,
+  decryptedChallenge: string,
+): Promise<boolean> {
+  const storedChallenge = this.challengeStore.get(challengeId);
 
-    if (!twoFaConfig || !twoFaConfig.isEnabled) {
-      throw new NotFoundException('2FA not enabled for this user');
-    }
+  console.log(`[DEBUG] Verify - ChallengeId: ${challengeId}`);
+  console.log(`[DEBUG] Store has ${this.challengeStore.size} challenges`);
+  console.log(`[DEBUG] Stored challenge:`, storedChallenge);
+  console.log(`[DEBUG] Decrypted challenge: ${decryptedChallenge}`);
 
-    try {
-      // Lese Public Key
-      const publicKey = await openpgp.readKey({
-        armoredKey: twoFaConfig.publicKeyPgp,
-      });
-
-      // Verifiziere die Signatur
-      const verified = await openpgp.verify({
-        message: await openpgp.createMessage({ text: challenge }),
-        signature: await openpgp.readSignature({
-          armoredSignature: signature,
-        }),
-        verificationKeys: publicKey,
-      });
-
-      // Prüfe ob mindestens eine Signatur valid ist
-      const isValid = verified.signatures.some((sig: any) => sig.valid === true);
-
-      if (!isValid) {
-        throw new BadRequestException('Signature verification failed');
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Signature verification error:', error);
-      throw new BadRequestException('Invalid signature');
-    }
+  if (!storedChallenge) {
+    throw new BadRequestException('Challenge not found or expired');
   }
+
+  if (storedChallenge.userId !== userId) {
+    throw new BadRequestException('Challenge belongs to different user');
+  }
+
+  if (storedChallenge.challenge !== decryptedChallenge) {
+    console.log(`[DEBUG] Challenge mismatch!`);
+    console.log(`[DEBUG] Expected: ${storedChallenge.challenge}`);
+    console.log(`[DEBUG] Got: ${decryptedChallenge}`);
+    throw new BadRequestException('Challenge verification failed');
+  }
+
+  this.challengeStore.delete(challengeId);
+  console.log(`[2FA] Challenge verified successfully - User: ${userId}`);
+
+  return true;
+}
 
   /**
    * SCHRITT 4: Disable 2FA
-   * User kann 2FA deaktivieren
    */
   async disableTwoFa(userId: number): Promise<void> {
     await (this.prisma as any).twoFaConfig.update({
@@ -155,25 +167,63 @@ export class TwoFaService {
   /**
    * SCHRITT 6: Get 2FA Status
    */
-async getTwoFaStatus(userId: number): Promise<{
-  enabled: boolean;
-  hasPublicKey: boolean;
-}> {
-  try {
-    const twoFaConfig = await (this.prisma as any).twoFaConfig.findUnique({
-      where: { userId },
+  async getTwoFaStatus(userId: number): Promise<{
+    enabled: boolean;
+    hasPublicKey: boolean;
+  }> {
+    try {
+      const twoFaConfig = await (this.prisma as any).twoFaConfig.findUnique({
+        where: { userId },
+      });
+
+      return {
+        enabled: twoFaConfig?.isEnabled ?? false,
+        hasPublicKey: !!twoFaConfig?.publicKeyPgp,
+      };
+    } catch (error) {
+      console.error('getTwoFaStatus error:', error);
+      return {
+        enabled: false,
+        hasPublicKey: false,
+      };
+    }
+  }
+
+  // Brauchen wir JwtService zum generieren von Tokens
+/**
+   * Generiere JWT Token nach erfolgreicher Challenge-Verifizierung
+   */
+  async generateLoginToken(userId: number): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    user: any;
+  }> {
+    const user = await (this.prisma as any).user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const payload = { sub: user.id, email: user.email, role: user.role };
+
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: '15m',
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      expiresIn: '7d',
     });
 
     return {
-      enabled: twoFaConfig?.isEnabled ?? false,
-      hasPublicKey: !!twoFaConfig?.publicKeyPgp,
-    };
-  } catch (error) {
-    console.error('getTwoFaStatus error:', error);
-    // Wenn noch keine 2FA Config existiert - return defaults
-    return {
-      enabled: false,
-      hasPublicKey: false,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
     };
   }
-}}
+}
