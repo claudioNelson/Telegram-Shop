@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Navbar from '../../components/Navbar';
 
 interface Product {
   id: number;
@@ -17,7 +18,7 @@ interface Product {
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [shop, setShop] = useState<any>(null);
+  const [shop, setShop] = useState(null as any);
   const router = useRouter();
 
   useEffect(() => {
@@ -26,7 +27,6 @@ export default function ProductsPage() {
 
   const fetchShopAndProducts = async () => {
     const token = localStorage.getItem('accessToken');
-    
     if (!token) {
       router.push('/login');
       return;
@@ -52,7 +52,6 @@ export default function ProductsPage() {
       }
     } catch (error) {
       console.error('Error:', error);
-      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -60,7 +59,7 @@ export default function ProductsPage() {
 
   const handleDelete = async (productId: number) => {
     const token = localStorage.getItem('accessToken');
-    if (!confirm('Delete?')) return;
+    if (!confirm('Delete this product?')) return;
 
     try {
       await fetch(
@@ -77,36 +76,46 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Products</h1>
-          <a href="/dashboard/products/new" className="bg-blue-600 text-white px-4 py-2 rounded">
-            New Product
+      <Navbar shopName={shop?.publicName} />
+
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="flex justify-between items-center mb-12">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Products</h1>
+            <p className="text-gray-600">Manage your product catalog</p>
+          </div>
+          <a href="/dashboard/products/new" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+            Create Product
           </a>
         </div>
 
         {products.length === 0 ? (
-          <div className="bg-white p-8 rounded-lg shadow">
-            <p className="text-gray-600">No products</p>
+          <div className="bg-white p-12 rounded-lg shadow text-center">
+            <p className="text-gray-600 mb-6">No products yet</p>
+            <a href="/dashboard/products/new" className="text-blue-600 hover:underline font-medium">
+              Create your first product
+            </a>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid gap-4">
             {products.map((product: Product) => (
-              <div key={product.id} className="bg-white p-6 rounded-lg shadow">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-bold">{product.title}</h3>
-                    <p className="text-gray-600">{product.description}</p>
-                    <p className="mt-2">{(product.priceCents / 100).toFixed(2)} EUR</p>
+              <div key={product.id} className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold mb-2">{product.title}</h3>
+                  <p className="text-gray-600 text-sm mb-4">{product.description}</p>
+                  <div className="flex gap-6 text-sm">
+                    <span className="font-medium">{(product.priceCents / 100).toFixed(2)} EUR</span>
+                    <span className="text-gray-600">{product.isDigital ? 'Digital' : 'Physical'}</span>
+                    {product.stockQuantity && <span className="text-gray-600">Stock: {product.stockQuantity}</span>}
                   </div>
-                  <div className="flex gap-2">
-                    <a href={`/dashboard/products/${product.id}/edit`} className="bg-blue-600 text-white px-4 py-2 rounded">
-                      Edit
-                    </a>
-                    <button onClick={() => handleDelete(product.id)} className="bg-red-600 text-white px-4 py-2 rounded">
-                      Delete
-                    </button>
-                  </div>
+                </div>
+                <div className="flex gap-2 ml-4">
+                  <a href={`/dashboard/products/${product.id}/edit`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm">
+                    Edit
+                  </a>
+                  <button onClick={() => handleDelete(product.id)} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition text-sm">
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}

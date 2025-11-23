@@ -2,21 +2,34 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/login', {
+      const response = await fetch('http://localhost:3001/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -25,7 +38,7 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || 'Login failed');
+        setError(data.message || 'Registration failed');
         setLoading(false);
         return;
       }
@@ -35,7 +48,7 @@ export default function LoginPage() {
 
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Login error');
+      setError(err.message || 'Registration error');
       setLoading(false);
     }
   };
@@ -46,10 +59,10 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-2xl p-8 fade-in">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-blue-600 mb-2">Telegram Shop</h1>
-            <p className="text-gray-600">Admin Dashboard</p>
+            <p className="text-gray-600">Create Account</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleRegister} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
@@ -58,7 +71,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                 placeholder="your@email.com"
                 required
               />
@@ -72,7 +85,21 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent"
                 placeholder="••••••••"
                 required
               />
@@ -87,21 +114,18 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white font-medium py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white font-medium py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition disabled:opacity-50"
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
-          <div className="text-center text-gray-600 text-sm mt-6">
-            <p>Demo: neuer2@test.com / password123</p>
-            <p className="mt-4">
-              Noch kein Konto?{' '}
-              <a href="/register" className="text-blue-600 hover:underline font-medium">
-                Jetzt registrieren
-              </a>
-            </p>
-          </div>
+          <p className="text-center text-gray-600 text-sm mt-6">
+            Already have an account?{' '}
+            <Link href="/login" className="text-blue-600 hover:underline font-medium">
+              Login
+            </Link>
+          </p>
         </div>
       </div>
     </div>
