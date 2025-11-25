@@ -12,6 +12,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { TwoFaModule } from './two-fa/two-fa.module';
 import { PrismaService } from './prisma/prisma.service';
+import { CommissionsModule } from './commissions/commissions.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PrismaService } from './prisma/prisma.service';
     PaymentsModule,
     TelegramModule,
     TwoFaModule,
+    CommissionsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
