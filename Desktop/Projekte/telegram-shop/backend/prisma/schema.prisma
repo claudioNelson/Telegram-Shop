@@ -91,6 +91,9 @@ model Shop {
   customers     Customer[]
   orders        Order[]
 
+  //Commission  
+  commissions       Commission[]
+
   @@map("shops")
 }
 
@@ -168,6 +171,8 @@ model Order {
   paymentProviderSessionId  String?
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
+  commission        Commission?
+
 
   // Relations
   shop                      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
@@ -212,4 +217,35 @@ model Payment {
   order                   Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("payments")
+}
+
+
+// ============ COMMISSION MODEL ============
+model Commission {
+  id            Int       @id @default(autoincrement())
+  orderId       Int       @unique
+  shopId        Int
+  orderAmount   Int       // Total EUR cents
+  commissionPct Float     // 3.0 oder 5.0 etc
+  commissionAmount Int    // Berechnet
+  status        String    @default("PENDING") // PENDING, PAID, REFUNDED
+  createdAt     DateTime  @default(now())
+  
+  order         Order     @relation(fields: [orderId], references: [id])
+  shop          Shop      @relation(fields: [shopId], references: [id])
+}
+
+// ============ PACKAGES (SaaS Plans) ============
+model Package {
+  id                Int       @id @default(autoincrement())
+  name              String    // "Starter", "Pro", "Enterprise"
+  description       String?   @db.Text
+  priceEur          Int       // in Cents (4900 = 49€)
+  commissionPercent Float     @default(5.0)
+  billingType       String    // MONTHLY, YEARLY, LIFETIME
+  isActive          Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("packages")
 }
