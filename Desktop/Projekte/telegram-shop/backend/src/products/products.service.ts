@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async createProduct(shopId: number, userId: number, data: any) {
     // Prüfe ob User der Shop-Owner ist
@@ -24,14 +24,14 @@ export class ProductsService {
     });
   }
 
-async getProductsByShop(shopId: number) {
-  return (this.prisma as any).product.findMany({
-    where: {
-      shopId,  // ← WICHTIG: shopId hinzufügen!
-      isActive: true,
-    },
-  });
-}
+  async getProductsByShop(shopId: number) {
+    return (this.prisma as any).product.findMany({
+      where: {
+        shopId: shopId,
+        isActive: true,
+      },
+    });
+  }
 
   async getProductById(productId: number) {
     const product = await (this.prisma as any).product.findUnique({
