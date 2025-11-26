@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Navbar from '../../components/Navbar';
+import { Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react';
 
 interface Product {
   id: number;
@@ -18,7 +18,7 @@ interface Product {
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [shop, setShop] = useState(null as any);
+  const [shop, setShop] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -44,14 +44,10 @@ export default function ProductsPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const productsData = await productsRes.json();
-      
-      if (Array.isArray(productsData)) {
-        setProducts(productsData);
-      } else {
-        setProducts([]);
-      }
+      setProducts(Array.isArray(productsData) ? productsData : []);
     } catch (error) {
       console.error('Error:', error);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -66,56 +62,113 @@ export default function ProductsPage() {
         `http://localhost:3001/api/shops/${shop.id}/products/${productId}`,
         { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
       );
-      setProducts(products.filter((p: Product) => p.id !== productId));
+      setProducts(products.filter((p) => p.id !== productId));
     } catch (error) {
       console.error('Error:', error);
     }
   };
 
-  if (loading) return <div className="p-8">Loading...</div>;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <p className="text-slate-400">Loading...</p>
+      </div>
+    );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar shopName={shop?.publicName} />
-
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-12">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Products</h1>
-            <p className="text-gray-600">Manage your product catalog</p>
+    <div className="min-h-screen bg-slate-950 p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition"
+              title="Back to dashboard"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-2xl font-bold text-white">Products</h1>
           </div>
-          <a href="/dashboard/products/new" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
-            Create Product
-          </a>
+          <button
+            onClick={() => router.push('/dashboard/products/new')}
+            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded transition"
+          >
+            <Plus size={18} />
+            New Product
+          </button>
         </div>
 
         {products.length === 0 ? (
-          <div className="bg-white p-12 rounded-lg shadow text-center">
-            <p className="text-gray-600 mb-6">No products yet</p>
-            <a href="/dashboard/products/new" className="text-blue-600 hover:underline font-medium">
+          <div className="bg-slate-900 border border-slate-800 rounded p-8 text-center">
+            <p className="text-slate-400 mb-4">No products yet</p>
+            <button
+              onClick={() => router.push('/dashboard/products/new')}
+              className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded transition"
+            >
+              <Plus size={18} />
               Create your first product
-            </a>
+            </button>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {products.map((product: Product) => (
-              <div key={product.id} className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition flex justify-between items-start">
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold mb-2">{product.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{product.description}</p>
-                  <div className="flex gap-6 text-sm">
-                    <span className="font-medium">{(product.priceCents / 100).toFixed(2)} EUR</span>
-                    <span className="text-gray-600">{product.isDigital ? 'Digital' : 'Physical'}</span>
-                    {product.stockQuantity && <span className="text-gray-600">Stock: {product.stockQuantity}</span>}
+          <div className="space-y-3">
+            {products.map((product) => (
+              <div
+                key={product.id}
+                className="bg-slate-900 border border-slate-800 rounded p-4 hover:bg-slate-800 transition"
+              >
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div>
+                        <p className="text-white font-semibold">{product.title}</p>
+                        <p className="text-slate-400 text-sm line-clamp-1">
+                          {product.description}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2 ml-4">
-                  <a href={`/dashboard/products/${product.id}/edit`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm">
-                    Edit
-                  </a>
-                  <button onClick={() => handleDelete(product.id)} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition text-sm">
-                    Delete
-                  </button>
+
+                  <div className="flex items-center gap-6 mr-4">
+                    <div className="flex gap-2">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          product.isDigital
+                            ? 'bg-blue-900 text-blue-100'
+                            : 'bg-slate-700 text-slate-100'
+                        }`}
+                      >
+                        {product.isDigital ? 'Digital' : 'Physical'}
+                      </span>
+                      {!product.isDigital && product.stockQuantity !== undefined && (
+                        <span className="px-2 py-1 rounded text-xs font-medium bg-slate-700 text-slate-100">
+                          Stock: {product.stockQuantity}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-white font-bold">
+                        {(product.priceCents / 100).toFixed(2)} {product.currency}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => router.push(`/dashboard/products/${product.id}/edit`)}
+                      className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition"
+                      title="Edit product"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(product.id)}
+                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded transition"
+                      title="Delete product"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

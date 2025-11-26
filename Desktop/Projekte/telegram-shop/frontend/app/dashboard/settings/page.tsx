@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft, Check } from 'lucide-react';
 
 interface Shop {
   id: number;
@@ -127,26 +128,23 @@ export default function SettingsPage() {
     }
   };
 
-const handleUploadPublicKey = async () => {
-  if (!publicKey.trim()) {
-    setError('Please provide a PGP public key');
-    return;
-  }
-  
-  const token = localStorage.getItem('accessToken');
-  console.log('Token:', token);  // ← HIER HINZUFÜGEN
-  
-  if (!token) {
-    setError('No authentication token found. Please login again.');
-    return;
-  }
+  const handleUploadPublicKey = async () => {
+    if (!publicKey.trim()) {
+      setError('Please provide a PGP public key');
+      return;
+    }
 
-  setUploadingKey(true);
-  setError('');
-  setSuccess('');
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setError('No authentication token found. Please login again.');
+      return;
+    }
+
+    setUploadingKey(true);
+    setError('');
+    setSuccess('');
 
     try {
-      const token = localStorage.getItem('accessToken');
       const response = await fetch('http://localhost:3001/api/two-fa/upload-key', {
         method: 'POST',
         headers: {
@@ -161,7 +159,7 @@ const handleUploadPublicKey = async () => {
       setSuccess('PGP Public Key uploaded successfully! 2FA is now enabled.');
       setPublicKey('');
       setPublicKeyFile(null);
-      
+
       // Refresh 2FA status
       const token2 = localStorage.getItem('accessToken');
       const twoFaRes = await fetch('http://localhost:3001/api/two-fa/status', {
@@ -197,7 +195,7 @@ const handleUploadPublicKey = async () => {
       if (!response.ok) throw new Error('Failed to disable 2FA');
 
       setSuccess('2FA disabled successfully');
-      
+
       // Refresh 2FA status
       const token2 = localStorage.getItem('accessToken');
       const twoFaRes = await fetch('http://localhost:3001/api/two-fa/status', {
@@ -215,123 +213,139 @@ const handleUploadPublicKey = async () => {
   };
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <p className="text-slate-400">Loading...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+    <div className="min-h-screen bg-slate-950 p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center gap-3 mb-8">
           <button
             onClick={() => router.push('/dashboard')}
-            className="text-blue-600 hover:text-blue-800"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition"
           >
-            ← Back to Dashboard
+            <ArrowLeft size={20} />
           </button>
+          <h1 className="text-3xl font-bold text-white">Settings</h1>
         </div>
-      </nav>
-
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Settings</h1>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-100 text-red-800 rounded-lg">
+          <div className="mb-6 p-4 bg-red-900 border border-red-800 text-red-100 rounded-lg">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-4 bg-green-100 text-green-800 rounded-lg">
+          <div className="mb-6 p-4 bg-emerald-900 border border-emerald-800 text-emerald-100 rounded-lg">
             {success}
           </div>
         )}
 
         {/* Wallet Management Section */}
-        <div className="bg-white p-8 rounded-lg shadow mb-8">
-          <h2 className="text-2xl font-bold mb-6">💰 Wallet Addresses</h2>
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-lg mb-8">
+          <h2 className="text-2xl font-bold text-white mb-6">💰 Wallet Addresses</h2>
           <form onSubmit={handleSaveWallets} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Bitcoin Address</label>
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                Bitcoin Address
+              </label>
               <input
                 type="text"
                 value={btcAddress}
                 onChange={(e) => setBtcAddress(e.target.value)}
                 placeholder="Your BTC address"
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded focus:outline-none focus:border-emerald-600"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Ethereum Address</label>
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                Ethereum Address
+              </label>
               <input
                 type="text"
                 value={ethAddress}
                 onChange={(e) => setEthAddress(e.target.value)}
                 placeholder="Your ETH address"
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded focus:outline-none focus:border-emerald-600"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Litecoin Address</label>
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                Litecoin Address
+              </label>
               <input
                 type="text"
                 value={ltcAddress}
                 onChange={(e) => setLtcAddress(e.target.value)}
                 placeholder="Your LTC address"
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded focus:outline-none focus:border-emerald-600"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">USDT Address</label>
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                USDT Address
+              </label>
               <input
                 type="text"
                 value={usdtAddress}
                 onChange={(e) => setUsdtAddress(e.target.value)}
                 placeholder="Your USDT address"
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded focus:outline-none focus:border-emerald-600"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Monero Address</label>
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                Monero Address
+              </label>
               <input
                 type="text"
                 value={xmrAddress}
                 onChange={(e) => setXmrAddress(e.target.value)}
                 placeholder="Your XMR address"
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded focus:outline-none focus:border-emerald-600"
               />
             </div>
 
             <button
               type="submit"
               disabled={savingWallets}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+              className="flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white px-6 py-2 rounded font-medium transition"
             >
-              {savingWallets ? 'Saving...' : 'Save Wallets'}
+              {savingWallets ? 'Saving...' : (
+                <>
+                  <Check size={18} />
+                  Save Wallets
+                </>
+              )}
             </button>
           </form>
         </div>
 
         {/* 2FA Section */}
-        <div className="bg-white p-8 rounded-lg shadow">
-          <h2 className="text-2xl font-bold mb-6">🔐 Two-Factor Authentication (PGP)</h2>
+        <div className="bg-slate-900 border border-slate-800 p-8 rounded-lg">
+          <h2 className="text-2xl font-bold text-white mb-6">🔐 Two-Factor Authentication (PGP)</h2>
 
           {twoFaStatus && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm">
+            <div className="mb-6 p-4 bg-slate-800 border border-slate-700 rounded-lg">
+              <p className="text-sm text-slate-300">
                 <strong>Status:</strong>{' '}
                 {twoFaStatus.enabled ? (
-                  <span className="text-green-600">✓ Enabled</span>
+                  <span className="text-emerald-400">✓ Enabled</span>
                 ) : (
-                  <span className="text-red-600">✗ Disabled</span>
+                  <span className="text-red-400">✗ Disabled</span>
                 )}
               </p>
               {twoFaStatus.hasPublicKey && (
-                <p className="text-sm mt-2">
-                  <strong>Public Key:</strong> <span className="text-green-600">✓ Configured</span>
+                <p className="text-sm mt-2 text-slate-300">
+                  <strong>Public Key:</strong> <span className="text-emerald-400">✓ Configured</span>
                 </p>
               )}
             </div>
@@ -339,21 +353,23 @@ const handleUploadPublicKey = async () => {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">PGP Public Key</label>
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                PGP Public Key
+              </label>
               <input
                 type="file"
                 accept=".asc,.pub,.txt"
                 onChange={handlePublicKeyFileChange}
-                className="w-full px-4 py-2 border rounded-lg"
+                className="w-full bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded"
               />
-              <p className="text-xs text-gray-600 mt-2">
+              <p className="text-xs text-slate-400 mt-2">
                 Or paste your PGP public key below:
               </p>
               <textarea
                 value={publicKey}
                 onChange={(e) => setPublicKey(e.target.value)}
                 placeholder="Paste your PGP public key here (-----BEGIN PGP PUBLIC KEY BLOCK-----)"
-                className="w-full px-4 py-2 border rounded-lg h-40 font-mono text-xs"
+                className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded h-40 font-mono text-xs focus:outline-none focus:border-emerald-600"
               />
             </div>
 
@@ -361,24 +377,29 @@ const handleUploadPublicKey = async () => {
               <button
                 onClick={handleUploadPublicKey}
                 disabled={uploadingKey || !publicKey.trim()}
-                className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 disabled:bg-gray-400"
+                className="flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white px-6 py-2 rounded font-medium transition"
               >
-                {uploadingKey ? 'Uploading...' : 'Upload Public Key'}
+                {uploadingKey ? 'Uploading...' : (
+                  <>
+                    <Check size={18} />
+                    Upload Public Key
+                  </>
+                )}
               </button>
 
               {twoFaStatus?.enabled && (
                 <button
                   onClick={handleDisable2Fa}
                   disabled={disabling2Fa}
-                  className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
+                  className="bg-red-900 hover:bg-red-800 disabled:opacity-50 text-red-100 px-6 py-2 rounded font-medium transition"
                 >
                   {disabling2Fa ? 'Disabling...' : 'Disable 2FA'}
                 </button>
               )}
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700">
-              <p className="font-semibold mb-2">How PGP 2FA works:</p>
+            <div className="bg-slate-800 p-4 rounded-lg text-sm text-slate-300">
+              <p className="font-semibold text-white mb-2">How PGP 2FA works:</p>
               <ol className="list-decimal list-inside space-y-1">
                 <li>Upload your PGP public key here</li>
                 <li>When you login, you'll receive an encrypted challenge</li>
