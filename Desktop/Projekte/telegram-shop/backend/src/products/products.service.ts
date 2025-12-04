@@ -1,28 +1,41 @@
-// src/products/products.service.ts
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
-  async createProduct(shopId: number, userId: number, data: any) {
-    // Prüfe ob User der Shop-Owner ist
-    const shop = await (this.prisma as any).shop.findUnique({
-      where: { id: shopId },
-    });
+async createProduct(shopId: number, userId: number, data: any) {
+  const shop = await (this.prisma as any).shop.findUnique({
+    where: { id: shopId },
+  });
 
-    if (!shop || shop.ownerUserId !== userId) {
-      throw new ForbiddenException('You can only add products to your own shop');
-    }
+  if (!shop || shop.ownerUserId !== userId) {
+    throw new ForbiddenException('You can only add products to your own shop');
+  }
 
-    return (this.prisma as any).product.create({
-      data: {
-        ...data,
-        shopId,
-      },
+  const { tiers, ...productData } = data;
+
+  const product = await (this.prisma as any).product.create({
+    data: {
+      ...productData,
+      shopId,
+    },
+  });
+
+  if (tiers && tiers.length > 0) {
+    await (this.prisma as any).productTier.createMany({
+      data: tiers.map((tier: any) => ({
+        productId: product.id,
+        minQuantity: tier.minQuantity,
+        maxQuantity: tier.maxQuantity,
+        priceCents: tier.priceCents,
+      })),
     });
   }
+
+  return product;
+}
 
   async getProductsByShop(shopId: number) {
     return (this.prisma as any).product.findMany({
@@ -48,7 +61,6 @@ export class ProductsService {
   async updateProduct(productId: number, userId: number, data: any) {
     const product = await this.getProductById(productId);
 
-    // Prüfe Berechtigung
     const shop = await (this.prisma as any).shop.findUnique({
       where: { id: product.shopId },
     });
@@ -66,7 +78,6 @@ export class ProductsService {
   async deleteProduct(productId: number, userId: number) {
     const product = await this.getProductById(productId);
 
-    // Prüfe Berechtigung
     const shop = await (this.prisma as any).shop.findUnique({
       where: { id: product.shopId },
     });

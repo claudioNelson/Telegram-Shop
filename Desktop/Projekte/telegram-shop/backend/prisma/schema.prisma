@@ -80,6 +80,18 @@ model Shop {
   ltcAddress    String?   // Litecoin
   usdtAddress   String?   // USDT (Ethereum)
   xmrAddress    String?   // Monero
+
+  // Email Notifications
+  notificationsEnabled  Boolean   @default(false)
+  notificationEmail     String?   // Email wo Benachrichtigungen hin
+  notifyOnOrder         Boolean   @default(true)
+  notifyOnLowStock      Boolean   @default(true)
+  
+  // Stock Warning
+  lowStockThreshold     Int       @default(5)  // Warnung wenn Stock < 5
+  
+  // Bot Settings
+  botWelcomeMessage     String    @default("Welcome to our shop! 🛍") @db.Text
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -90,9 +102,7 @@ model Shop {
   products      Product[]
   customers     Customer[]
   orders        Order[]
-
-  //Commission  
-  commissions       Commission[]
+  commissions   Commission[]
 
   @@map("shops")
 }
@@ -101,7 +111,7 @@ model Shop {
 model Bot {
   id                    Int       @id @default(autoincrement())
   shopId                Int
-  name                  String?   // ← Optional mit ?
+  name                  String?
   telegramBotToken      String    @unique
   telegramBotUsername   String
   welcomeMessage        String    @db.Text
@@ -115,6 +125,7 @@ model Bot {
 
   @@map("bots")
 }
+
 // ============ PRODUCTS ============
 model Product {
   id            Int       @id @default(autoincrement())
@@ -133,8 +144,25 @@ model Product {
   // Relations
   shop          Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
   orderItems    OrderItem[]
+  tiers         ProductTier[]
 
   @@map("products")
+}
+
+// ============ PRODUCT TIERS (Staffelpreise) ============
+model ProductTier {
+  id              Int       @id @default(autoincrement())
+  productId       Int
+  minQuantity     Int
+  maxQuantity     Int?
+  priceCents      Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  product         Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_tiers")
 }
 
 // ============ CUSTOMERS (Telegram-Nutzer) ============
@@ -171,8 +199,7 @@ model Order {
   paymentProviderSessionId  String?
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
-  commission        Commission?
-
+  commission                Commission?
 
   // Relations
   shop                      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
@@ -219,16 +246,15 @@ model Payment {
   @@map("payments")
 }
 
-
 // ============ COMMISSION MODEL ============
 model Commission {
   id            Int       @id @default(autoincrement())
   orderId       Int       @unique
   shopId        Int
-  orderAmount   Int       // Total EUR cents
-  commissionPct Float     // 3.0 oder 5.0 etc
-  commissionAmount Int    // Berechnet
-  status        String    @default("PENDING") // PENDING, PAID, REFUNDED
+  orderAmount   Int
+  commissionPct Float
+  commissionAmount Int
+  status        String    @default("PENDING")
   createdAt     DateTime  @default(now())
   
   order         Order     @relation(fields: [orderId], references: [id])
@@ -238,11 +264,11 @@ model Commission {
 // ============ PACKAGES (SaaS Plans) ============
 model Package {
   id                Int       @id @default(autoincrement())
-  name              String    // "Starter", "Pro", "Enterprise"
+  name              String
   description       String?   @db.Text
-  priceEur          Int       // in Cents (4900 = 49€)
+  priceEur          Int
   commissionPercent Float     @default(5.0)
-  billingType       String    // MONTHLY, YEARLY, LIFETIME
+  billingType       String
   isActive          Boolean   @default(true)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
