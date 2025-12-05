@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Check, Wallet, Bell, AlertTriangle, MessageSquare, Lock } from 'lucide-react';
+import { ArrowLeft, Check, Wallet, Bell, MessageSquare, Lock } from 'lucide-react';
 
 interface Shop {
   id: number;
@@ -24,8 +24,11 @@ interface TwoFaStatus {
   hasPublicKey: boolean;
 }
 
+type TabType = 'wallet' | 'notifications' | 'bot' | '2fa';
+
 export default function SettingsPage() {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<TabType>('wallet');
   const [shop, setShop] = useState<Shop | null>(null);
   const [twoFaStatus, setTwoFaStatus] = useState<TwoFaStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +60,6 @@ export default function SettingsPage() {
 
   // 2FA States
   const [publicKey, setPublicKey] = useState('');
-  const [publicKeyFile, setPublicKeyFile] = useState<File | null>(null);
   const [uploadingKey, setUploadingKey] = useState(false);
   const [disabling2Fa, setDisabling2Fa] = useState(false);
 
@@ -67,7 +69,6 @@ export default function SettingsPage() {
       router.push('/login');
       return;
     }
-
     fetchSettings(token);
   }, [router]);
 
@@ -223,18 +224,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handlePublicKeyFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPublicKeyFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setPublicKey(event.target?.result as string);
-      };
-      reader.readAsText(file);
-    }
-  };
-
   const handleUploadPublicKey = async () => {
     if (!publicKey.trim()) {
       setError('Please provide a PGP public key');
@@ -264,7 +253,6 @@ export default function SettingsPage() {
       if (!response.ok) throw new Error('Failed to upload public key');
       setSuccess('PGP Public Key uploaded successfully! 2FA is now enabled.');
       setPublicKey('');
-      setPublicKeyFile(null);
 
       const token2 = localStorage.getItem('accessToken');
       const twoFaRes = await fetch('http://localhost:3001/api/two-fa/status', {
@@ -321,9 +309,16 @@ export default function SettingsPage() {
     );
   }
 
+  const tabs = [
+    { id: 'wallet' as TabType, label: 'Wallet Addresses', icon: Wallet },
+    { id: 'notifications' as TabType, label: 'Notifications', icon: Bell },
+    { id: 'bot' as TabType, label: 'Bot Settings', icon: MessageSquare },
+    { id: '2fa' as TabType, label: '2FA', icon: Lock },
+  ];
+
   return (
     <div className="min-h-screen bg-slate-950 p-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <div className="flex items-center gap-4 mb-12">
           <button
             onClick={() => router.push('/dashboard')}
@@ -331,7 +326,7 @@ export default function SettingsPage() {
           >
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-4xl font-bold text-white">Settings</h1>
+          <h1 className="text-3xl font-bold text-white">Settings</h1>
         </div>
 
         {error && (
@@ -346,366 +341,346 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Wallets Section - Emerald Border */}
-        <div className="mb-20">
-          <div className="flex items-center gap-3 mb-6">
-            <Wallet className="text-emerald-400" size={24} />
-            <h2 className="text-2xl font-bold text-white">Wallet Addresses</h2>
-          </div>
-
-          <div className="bg-slate-900 border-l-4 border-l-emerald-500 border border-slate-800 rounded-lg p-8">
-            <form onSubmit={handleSaveWallets} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <label className="block text-slate-300 text-sm font-semibold mb-3">
-                    Bitcoin (BTC)
-                  </label>
-                  <input
-                    type="text"
-                    value={btcAddress}
-                    onChange={(e) => setBtcAddress(e.target.value)}
-                    placeholder="Your BTC address"
-                    className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 text-sm font-semibold mb-3">
-                    Ethereum (ETH)
-                  </label>
-                  <input
-                    type="text"
-                    value={ethAddress}
-                    onChange={(e) => setEthAddress(e.target.value)}
-                    placeholder="Your ETH address"
-                    className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 text-sm font-semibold mb-3">
-                    Litecoin (LTC)
-                  </label>
-                  <input
-                    type="text"
-                    value={ltcAddress}
-                    onChange={(e) => setLtcAddress(e.target.value)}
-                    placeholder="Your LTC address"
-                    className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 text-sm font-semibold mb-3">
-                    USDT (Ethereum)
-                  </label>
-                  <input
-                    type="text"
-                    value={usdtAddress}
-                    onChange={(e) => setUsdtAddress(e.target.value)}
-                    placeholder="Your USDT address"
-                    className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-slate-300 text-sm font-semibold mb-3">
-                    Monero (XMR)
-                  </label>
-                  <input
-                    type="text"
-                    value={xmrAddress}
-                    onChange={(e) => setXmrAddress(e.target.value)}
-                    placeholder="Your XMR address"
-                    className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={savingWallets}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition"
-              >
-                {savingWallets ? 'Saving...' : (
-                  <>
-                    <Check size={20} />
-                    Save Wallet Addresses
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Email Notifications Section - Blue Border */}
-        <div className="mb-20">
-          <div className="flex items-center gap-3 mb-6">
-            <Bell className="text-blue-400" size={24} />
-            <h2 className="text-2xl font-bold text-white">Email Notifications</h2>
-          </div>
-
-          <div className="bg-slate-900 border-l-4 border-l-blue-500 border border-slate-800 rounded-lg p-8">
-            <form onSubmit={handleSaveNotifications} className="space-y-6">
-              <div className="flex items-center gap-4 p-4 bg-slate-800 rounded-lg">
-                <input
-                  type="checkbox"
-                  id="notificationsEnabled"
-                  checked={notificationsEnabled}
-                  onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                  className="w-5 h-5 cursor-pointer rounded"
-                />
-                <label
-                  htmlFor="notificationsEnabled"
-                  className="text-white font-semibold cursor-pointer flex-1"
+        <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+          <div className="flex border-b border-slate-800">
+            {tabs.map((tab) => {
+              const IconComponent = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 px-6 py-4 font-medium transition flex items-center justify-center gap-2 ${
+                    activeTab === tab.id
+                      ? 'bg-slate-800 text-white border-b-2 border-b-emerald-500'
+                      : 'text-slate-400 hover:text-slate-300'
+                  }`}
                 >
-                  Enable Email Notifications
-                </label>
-              </div>
+                  <IconComponent size={18} />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
-              {notificationsEnabled && (
-                <div className="space-y-6 pt-4 border-t border-slate-700">
+          <div className="p-8">
+            {activeTab === 'wallet' && (
+              <div>
+                <h2 className="text-xl font-bold text-white mb-6">💰 Wallet Addresses</h2>
+                <form onSubmit={handleSaveWallets} className="space-y-6">
                   <div>
                     <label className="block text-slate-300 text-sm font-semibold mb-3">
-                      Notification Email Address
+                      Bitcoin (BTC)
                     </label>
                     <input
-                      type="email"
-                      value={notificationEmail}
-                      onChange={(e) => setNotificationEmail(e.target.value)}
-                      required={notificationsEnabled}
-                      placeholder="your-email@example.com"
-                      className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-blue-600 transition"
+                      type="text"
+                      value={btcAddress}
+                      onChange={(e) => setBtcAddress(e.target.value)}
+                      placeholder="Your BTC address"
+                      className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
                     />
                   </div>
 
-                  <div className="space-y-3">
-                    <p className="text-slate-300 text-sm font-semibold">Notification Types:</p>
-                    <div className="flex items-center gap-4 p-3 bg-slate-800 rounded-lg">
-                      <input
-                        type="checkbox"
-                        id="notifyOnOrder"
-                        checked={notifyOnOrder}
-                        onChange={(e) => setNotifyOnOrder(e.target.checked)}
-                        className="w-4 h-4 cursor-pointer rounded"
-                      />
-                      <label
-                        htmlFor="notifyOnOrder"
-                        className="text-slate-200 cursor-pointer flex-1"
-                      >
-                        Notify when new order arrives
-                      </label>
-                    </div>
-
-                    <div className="flex items-center gap-4 p-3 bg-slate-800 rounded-lg">
-                      <input
-                        type="checkbox"
-                        id="notifyOnLowStock"
-                        checked={notifyOnLowStock}
-                        onChange={(e) => setNotifyOnLowStock(e.target.checked)}
-                        className="w-4 h-4 cursor-pointer rounded"
-                      />
-                      <label
-                        htmlFor="notifyOnLowStock"
-                        className="text-slate-200 cursor-pointer flex-1"
-                      >
-                        Notify when product stock is low
-                      </label>
-                    </div>
+                  <div>
+                    <label className="block text-slate-300 text-sm font-semibold mb-3">
+                      Ethereum (ETH)
+                    </label>
+                    <input
+                      type="text"
+                      value={ethAddress}
+                      onChange={(e) => setEthAddress(e.target.value)}
+                      placeholder="Your ETH address"
+                      className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
+                    />
                   </div>
-                </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={savingNotifications}
-                className="w-full flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition"
-              >
-                {savingNotifications ? 'Saving...' : (
-                  <>
-                    <Check size={20} />
-                    Save Notification Settings
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
+                  <div>
+                    <label className="block text-slate-300 text-sm font-semibold mb-3">
+                      Litecoin (LTC)
+                    </label>
+                    <input
+                      type="text"
+                      value={ltcAddress}
+                      onChange={(e) => setLtcAddress(e.target.value)}
+                      placeholder="Your LTC address"
+                      className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
+                    />
+                  </div>
 
-        {/* Stock Warning Section - Orange Border */}
-        <div className="mb-20">
-          <div className="flex items-center gap-3 mb-6">
-            <AlertTriangle className="text-orange-400" size={24} />
-            <h2 className="text-2xl font-bold text-white">Stock Warning</h2>
-          </div>
+                  <div>
+                    <label className="block text-slate-300 text-sm font-semibold mb-3">
+                      USDT (Ethereum)
+                    </label>
+                    <input
+                      type="text"
+                      value={usdtAddress}
+                      onChange={(e) => setUsdtAddress(e.target.value)}
+                      placeholder="Your USDT address"
+                      className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
+                    />
+                  </div>
 
-          <div className="bg-slate-900 border-l-4 border-l-orange-500 border border-slate-800 rounded-lg p-8">
-            <form onSubmit={handleSaveStock} className="space-y-6">
-              <div>
-                <label className="block text-slate-300 text-sm font-semibold mb-2">
-                  Low Stock Alert Threshold
-                </label>
-                <p className="text-slate-400 text-sm mb-4">
-                  You'll receive an alert when a product's stock falls below this number
-                </p>
-                <input
-                  type="number"
-                  value={lowStockThreshold}
-                  onChange={(e) => setLowStockThreshold(parseInt(e.target.value))}
-                  min="1"
-                  className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-orange-600 transition text-lg font-semibold"
-                />
-                <p className="text-slate-400 text-xs mt-2">
-                  Current threshold: <span className="text-orange-400 font-semibold">{lowStockThreshold} units</span>
-                </p>
-              </div>
+                  <div>
+                    <label className="block text-slate-300 text-sm font-semibold mb-3">
+                      Monero (XMR)
+                    </label>
+                    <input
+                      type="text"
+                      value={xmrAddress}
+                      onChange={(e) => setXmrAddress(e.target.value)}
+                      placeholder="Your XMR address"
+                      className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                disabled={savingStock}
-                className="w-full flex items-center justify-center gap-2 bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition"
-              >
-                {savingStock ? 'Saving...' : (
-                  <>
-                    <Check size={20} />
-                    Save Stock Threshold
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Bot Settings Section - Purple Border */}
-        <div className="mb-20">
-          <div className="flex items-center gap-3 mb-6">
-            <MessageSquare className="text-purple-400" size={24} />
-            <h2 className="text-2xl font-bold text-white">Bot Welcome Message</h2>
-          </div>
-
-          <div className="bg-slate-900 border-l-4 border-l-purple-500 border border-slate-800 rounded-lg p-8">
-            <form onSubmit={handleSaveBot} className="space-y-6">
-              <div>
-                <label className="block text-slate-300 text-sm font-semibold mb-2">
-                  Welcome Message
-                </label>
-                <p className="text-slate-400 text-sm mb-4">
-                  This message is displayed when customers start your Telegram bot
-                </p>
-                <textarea
-                  value={botWelcomeMessage}
-                  onChange={(e) => setBotWelcomeMessage(e.target.value)}
-                  rows={5}
-                  className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-purple-600 transition resize-none"
-                  placeholder="Welcome to our shop! 🛍"
-                />
-                <p className="text-slate-400 text-xs mt-2">
-                  Characters: <span className="text-purple-400">{botWelcomeMessage.length}</span>
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                disabled={savingBot}
-                className="w-full flex items-center justify-center gap-2 bg-purple-700 hover:bg-purple-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition"
-              >
-                {savingBot ? 'Saving...' : (
-                  <>
-                    <Check size={20} />
-                    Save Bot Message
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* 2FA Section - Red Border */}
-        <div>
-          <div className="flex items-center gap-3 mb-6">
-            <Lock className="text-red-400" size={24} />
-            <h2 className="text-2xl font-bold text-white">Two-Factor Authentication (PGP)</h2>
-          </div>
-
-          <div className="bg-slate-900 border-l-4 border-l-red-500 border border-slate-800 rounded-lg p-8">
-            {twoFaStatus && (
-              <div className="mb-8 p-4 bg-slate-800 border border-slate-700 rounded-lg">
-                <p className="text-slate-300 mb-2">
-                  <strong>Status:</strong>{' '}
-                  {twoFaStatus.enabled ? (
-                    <span className="text-emerald-400 font-semibold">✓ Enabled</span>
-                  ) : (
-                    <span className="text-red-400 font-semibold">✗ Disabled</span>
-                  )}
-                </p>
-                {twoFaStatus.hasPublicKey && (
-                  <p className="text-slate-300">
-                    <strong>Public Key:</strong> <span className="text-emerald-400 font-semibold">✓ Configured</span>
-                  </p>
-                )}
+                  <button
+                    type="submit"
+                    disabled={savingWallets}
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition mt-8"
+                  >
+                    {savingWallets ? 'Saving...' : (
+                      <>
+                        <Check size={20} />
+                        Save Wallet Addresses
+                      </>
+                    )}
+                  </button>
+                </form>
               </div>
             )}
 
-            <div className="space-y-8">
+            {activeTab === 'notifications' && (
               <div>
-                <label className="block text-slate-300 text-sm font-semibold mb-3">
-                  PGP Public Key
-                </label>
-                <p className="text-slate-400 text-sm mb-4">
-                  Upload your public key file or paste it below
-                </p>
-                <input
-                  type="file"
-                  accept=".asc,.pub,.txt"
-                  onChange={handlePublicKeyFileChange}
-                  className="w-full bg-slate-800 border border-slate-700 text-slate-300 px-4 py-3 rounded-lg mb-4 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-red-700 file:text-white file:cursor-pointer"
-                />
+                <h2 className="text-xl font-bold text-white mb-6">📧 Email Notifications</h2>
+                <form onSubmit={handleSaveNotifications} className="space-y-6">
+                  <div className="flex items-center gap-4 p-4 bg-slate-800 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="notificationsEnabled"
+                      checked={notificationsEnabled}
+                      onChange={(e) => setNotificationsEnabled(e.target.checked)}
+                      className="w-5 h-5 cursor-pointer rounded"
+                    />
+                    <label
+                      htmlFor="notificationsEnabled"
+                      className="text-white font-semibold cursor-pointer flex-1"
+                    >
+                      Enable Email Notifications
+                    </label>
+                  </div>
 
-                <textarea
-                  value={publicKey}
-                  onChange={(e) => setPublicKey(e.target.value)}
-                  placeholder="Paste your PGP public key here (-----BEGIN PGP PUBLIC KEY BLOCK-----)"
-                  rows={8}
-                  className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg font-mono text-xs focus:outline-none focus:border-red-600 transition resize-none"
-                />
-              </div>
+                  {notificationsEnabled && (
+                    <div className="space-y-6 pt-4 border-t border-slate-700">
+                      <div>
+                        <label className="block text-slate-300 text-sm font-semibold mb-3">
+                          Notification Email Address
+                        </label>
+                        <input
+                          type="email"
+                          value={notificationEmail}
+                          onChange={(e) => setNotificationEmail(e.target.value)}
+                          required={notificationsEnabled}
+                          placeholder="your-email@example.com"
+                          className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
+                        />
+                      </div>
 
-              <div className="flex gap-4">
-                <button
-                  onClick={handleUploadPublicKey}
-                  disabled={uploadingKey || !publicKey.trim()}
-                  className="flex-1 flex items-center justify-center gap-2 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition"
-                >
-                  {uploadingKey ? 'Uploading...' : (
-                    <>
-                      <Check size={20} />
-                      Upload Public Key
-                    </>
+                      <div className="space-y-3">
+                        <p className="text-slate-300 text-sm font-semibold">Notification Types:</p>
+                        <div className="flex items-center gap-4 p-3 bg-slate-800 rounded-lg">
+                          <input
+                            type="checkbox"
+                            id="notifyOnOrder"
+                            checked={notifyOnOrder}
+                            onChange={(e) => setNotifyOnOrder(e.target.checked)}
+                            className="w-4 h-4 cursor-pointer rounded"
+                          />
+                          <label
+                            htmlFor="notifyOnOrder"
+                            className="text-slate-200 cursor-pointer flex-1"
+                          >
+                            Notify when new order arrives
+                          </label>
+                        </div>
+
+                        <div className="flex items-center gap-4 p-3 bg-slate-800 rounded-lg">
+                          <input
+                            type="checkbox"
+                            id="notifyOnLowStock"
+                            checked={notifyOnLowStock}
+                            onChange={(e) => setNotifyOnLowStock(e.target.checked)}
+                            className="w-4 h-4 cursor-pointer rounded"
+                          />
+                          <label
+                            htmlFor="notifyOnLowStock"
+                            className="text-slate-200 cursor-pointer flex-1"
+                          >
+                            Notify when product stock is low
+                          </label>
+                        </div>
+                      </div>
+                    </div>
                   )}
-                </button>
 
-                {twoFaStatus?.enabled && (
                   <button
-                    onClick={handleDisable2Fa}
-                    disabled={disabling2Fa}
-                    className="flex-1 bg-red-900 hover:bg-red-800 disabled:opacity-50 text-red-100 px-6 py-3 rounded-lg font-semibold transition"
+                    type="submit"
+                    disabled={savingNotifications}
+                    className="w-full flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition mt-8"
                   >
-                    {disabling2Fa ? 'Disabling...' : 'Disable 2FA'}
+                    {savingNotifications ? 'Saving...' : (
+                      <>
+                        <Check size={20} />
+                        Save Notification Settings
+                      </>
+                    )}
                   </button>
-                )}
+                </form>
               </div>
+            )}
 
-              <div className="bg-slate-800 border border-slate-700 p-6 rounded-lg text-sm text-slate-300">
-                <p className="font-semibold text-white mb-3">How PGP 2FA Works:</p>
-                <ol className="list-decimal list-inside space-y-2 text-slate-400">
-                  <li>Upload your PGP public key here</li>
-                  <li>When you login, you'll receive an encrypted challenge</li>
-                  <li>Decrypt the challenge with your private key</li>
-                  <li>Sign the decrypted challenge</li>
-                  <li>Send the signature back to complete login</li>
-                </ol>
+            {activeTab === 'bot' && (
+              <div>
+                <h2 className="text-xl font-bold text-white mb-6">🤖 Bot Welcome Message</h2>
+                <form onSubmit={handleSaveBot} className="space-y-6">
+                  <div>
+                    <label className="block text-slate-300 text-sm font-semibold mb-2">
+                      Welcome Message
+                    </label>
+                    <p className="text-slate-400 text-sm mb-4">
+                      This message is displayed when customers start your Telegram bot
+                    </p>
+                    <textarea
+                      value={botWelcomeMessage}
+                      onChange={(e) => setBotWelcomeMessage(e.target.value)}
+                      rows={6}
+                      className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition resize-none"
+                      placeholder="Welcome to our shop! 🛍"
+                    />
+                    <p className="text-slate-400 text-xs mt-2">
+                      Characters: <span className="text-emerald-400">{botWelcomeMessage.length}</span>
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={savingBot}
+                    className="w-full flex items-center justify-center gap-2 bg-purple-700 hover:bg-purple-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition mt-8"
+                  >
+                    {savingBot ? 'Saving...' : (
+                      <>
+                        <Check size={20} />
+                        Save Bot Message
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                <div className="mt-8 p-4 bg-slate-800 rounded-lg">
+                  <p className="text-slate-300 text-sm font-semibold mb-2">Stock Warning Threshold</p>
+                  <p className="text-slate-400 text-sm mb-4">
+                    Set the quantity at which you want to be alerted about low stock
+                  </p>
+                  <form onSubmit={handleSaveStock} className="space-y-4">
+                    <input
+                      type="number"
+                      value={lowStockThreshold}
+                      onChange={(e) => setLowStockThreshold(parseInt(e.target.value))}
+                      min="1"
+                      className="w-full bg-slate-700 border border-slate-600 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-emerald-600 transition"
+                    />
+                    <button
+                      type="submit"
+                      disabled={savingStock}
+                      className="w-full flex items-center justify-center gap-2 bg-orange-700 hover:bg-orange-600 disabled:opacity-50 text-white px-6 py-2 rounded-lg font-semibold transition"
+                    >
+                      {savingStock ? 'Saving...' : (
+                        <>
+                          <Check size={18} />
+                          Save Stock Threshold
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
               </div>
-            </div>
+            )}
+
+            {activeTab === '2fa' && (
+              <div>
+                <h2 className="text-xl font-bold text-white mb-6">🔐 Two-Factor Authentication</h2>
+
+                {twoFaStatus && (
+                  <div className="mb-8 p-4 bg-slate-800 border border-slate-700 rounded-lg">
+                    <p className="text-slate-300 mb-2">
+                      <strong>Status:</strong>{' '}
+                      {twoFaStatus.enabled ? (
+                        <span className="text-emerald-400 font-semibold">✓ Enabled</span>
+                      ) : (
+                        <span className="text-red-400 font-semibold">✗ Disabled</span>
+                      )}
+                    </p>
+                    {twoFaStatus.hasPublicKey && (
+                      <p className="text-slate-300">
+                        <strong>Public Key:</strong> <span className="text-emerald-400 font-semibold">✓ Configured</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-slate-300 text-sm font-semibold mb-3">
+                      PGP Public Key
+                    </label>
+                    <p className="text-slate-400 text-sm mb-4">
+                      Paste your PGP public key below
+                    </p>
+                    <textarea
+                      value={publicKey}
+                      onChange={(e) => setPublicKey(e.target.value)}
+                      placeholder="Paste your PGP public key here (-----BEGIN PGP PUBLIC KEY BLOCK-----)"
+                      rows={10}
+                      className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-lg font-mono text-xs focus:outline-none focus:border-emerald-600 transition resize-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={handleUploadPublicKey}
+                      disabled={uploadingKey || !publicKey.trim()}
+                      className="flex-1 flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-semibold transition"
+                    >
+                      {uploadingKey ? 'Uploading...' : (
+                        <>
+                          <Check size={20} />
+                          Upload Public Key
+                        </>
+                      )}
+                    </button>
+
+                    {twoFaStatus?.enabled && (
+                      <button
+                        onClick={handleDisable2Fa}
+                        disabled={disabling2Fa}
+                        className="flex-1 bg-red-900 hover:bg-red-800 disabled:opacity-50 text-red-100 px-6 py-3 rounded-lg font-semibold transition"
+                      >
+                        {disabling2Fa ? 'Disabling...' : 'Disable 2FA'}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="bg-slate-800 border border-slate-700 p-6 rounded-lg text-sm text-slate-300">
+                    <p className="font-semibold text-white mb-3">How PGP 2FA Works:</p>
+                    <ol className="list-decimal list-inside space-y-2 text-slate-400">
+                      <li>Upload your PGP public key here</li>
+                      <li>When you login, you will receive an encrypted challenge</li>
+                      <li>Decrypt the challenge with your private key</li>
+                      <li>Sign the decrypted challenge</li>
+                      <li>Send the signature back to complete login</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

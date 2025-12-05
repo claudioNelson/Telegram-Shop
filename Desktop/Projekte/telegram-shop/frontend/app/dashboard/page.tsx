@@ -5,14 +5,12 @@ import Navbar from '../components/Navbar';
 import {
   Package,
   ShoppingCart,
-  Bot,
   Settings,
-  Zap,
-  Bitcoin,
-  Coins,
+  TrendingUp,
+  TrendingDown,
   Copy,
   CheckCircle,
-  ChevronRight,
+  ArrowRight,
 } from 'lucide-react';
 
 interface Shop {
@@ -21,10 +19,13 @@ interface Shop {
   slug: string;
   btcAddress?: string;
   ethAddress?: string;
+  ltcAddress?: string;
+  usdtAddress?: string;
+  xmrAddress?: string;
 }
 
 export default function DashboardPage() {
-  const [shop, setShop] = useState(null as Shop | null);
+  const [shop, setShop] = useState<Shop | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-slate-300">Loading...</div>
       </div>
     );
@@ -69,10 +70,10 @@ export default function DashboardPage() {
 
   if (!shop) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="min-h-screen bg-slate-950">
         <Navbar shopName="Error" />
         <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="p-4 bg-red-900/30 border border-red-800/50 text-red-400 rounded-lg">
+          <div className="p-4 bg-red-900 bg-opacity-30 border border-red-800 border-opacity-50 text-red-400 rounded-lg">
             Shop not found
           </div>
         </div>
@@ -80,211 +81,289 @@ export default function DashboardPage() {
     );
   }
 
-  const actions = [
-    {
-      href: '/dashboard/products',
-      icon: <Package className="w-5 h-5" />,
-      label: 'Products',
-      count: '12',
-    },
-    {
-      href: '/dashboard/orders',
-      icon: <ShoppingCart className="w-5 h-5" />,
-      label: 'Orders',
-      count: '8',
-    },
-    {
-      href: '/dashboard/bots',
-      icon: <Bot className="w-5 h-5" />,
-      label: 'Bots',
-      count: '1',
-    },
-    {
-      href: '/dashboard/settings',
-      icon: <Settings className="w-5 h-5" />,
-      label: 'Settings',
-      count: '',
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-slate-950">
       <Navbar shopName={shop.publicName} />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white">{shop.publicName}</h1>
-          <p className="text-slate-400 text-sm">Cryptocurrency e-commerce dashboard</p>
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        {/* Hero Section */}
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold text-white mb-2">
+            Welcome back, {shop.publicName}! 👋
+          </h1>
+          <p className="text-slate-400">
+            Here is an overview of your shop performance
+          </p>
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Quick Actions - Left Side */}
-          <div className="lg:col-span-2">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-              {actions.map((action, index) => (
-                <a
-                  key={index}
-                  href={action.href}
-                  className="bg-slate-800/50 border border-slate-700 hover:border-slate-600 rounded-lg p-4 transition group"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="text-slate-300 group-hover:text-white transition">
-                      {action.icon}
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition" />
-                  </div>
-                  <h3 className="text-white font-semibold text-sm mb-1">
-                    {action.label}
-                  </h3>
-                  {action.count && (
-                    <p className="text-slate-400 text-xs">{action.count} total</p>
-                  )}
-                </a>
-              ))}
-            </div>
-
-            {/* Shop Info Table */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg">
-              <div className="px-6 py-4 border-b border-slate-700">
-                <h2 className="text-sm font-semibold text-white">Shop Information</h2>
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          {/* Card 1 */}
+          <div className="border-t-4 border-t-emerald-500 bg-slate-900 border border-slate-800 rounded-lg p-6 hover:border-slate-700 transition">
+            <div className="flex items-start justify-between mb-4">
+              <ShoppingCart className="w-6 h-6 text-emerald-400" />
+              <div className="flex items-center gap-1 text-sm text-slate-400">
+                <TrendingUp className="w-4 h-4" />
+                <span>+3.5%</span>
               </div>
-              <div className="divide-y divide-slate-700">
-                <div className="px-6 py-3 flex justify-between items-center text-sm">
-                  <span className="text-slate-400">Name</span>
-                  <span className="text-white font-medium">{shop.publicName}</span>
+            </div>
+            <p className="text-slate-400 text-sm font-medium mb-1">
+              Total Orders
+            </p>
+            <p className="text-white text-3xl font-bold">0</p>
+          </div>
+
+          {/* Card 2 */}
+          <div className="border-t-4 border-t-blue-500 bg-slate-900 border border-slate-800 rounded-lg p-6 hover:border-slate-700 transition">
+            <div className="flex items-start justify-between mb-4">
+              <TrendingUp className="w-6 h-6 text-blue-400" />
+              <div className="flex items-center gap-1 text-sm text-emerald-400">
+                <TrendingUp className="w-4 h-4" />
+                <span>+11%</span>
+              </div>
+            </div>
+            <p className="text-slate-400 text-sm font-medium mb-1">
+              Revenue
+            </p>
+            <p className="text-white text-3xl font-bold">€0.00</p>
+          </div>
+
+          {/* Card 3 */}
+          <div className="border-t-4 border-t-orange-500 bg-slate-900 border border-slate-800 rounded-lg p-6 hover:border-slate-700 transition">
+            <div className="flex items-start justify-between mb-4">
+              <Package className="w-6 h-6 text-orange-400" />
+              <div className="flex items-center gap-1 text-sm text-emerald-400">
+                <TrendingUp className="w-4 h-4" />
+                <span>+5%</span>
+              </div>
+            </div>
+            <p className="text-slate-400 text-sm font-medium mb-1">
+              Active Products
+            </p>
+            <p className="text-white text-3xl font-bold">0</p>
+          </div>
+
+          {/* Card 4 */}
+          <div className="border-t-4 border-t-purple-500 bg-slate-900 border border-slate-800 rounded-lg p-6 hover:border-slate-700 transition">
+            <div className="flex items-start justify-between mb-4">
+              <TrendingUp className="w-6 h-6 text-purple-400" />
+              <div className="flex items-center gap-1 text-sm text-red-400">
+                <TrendingDown className="w-4 h-4" />
+                <span>-2.4%</span>
+              </div>
+            </div>
+            <p className="text-slate-400 text-sm font-medium mb-1">
+              Conversion Rate
+            </p>
+            <p className="text-white text-3xl font-bold">0%</p>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mb-12">
+          <h2 className="text-xl font-bold text-white mb-6">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Action 1 */}
+            
+              <a href="/dashboard/products"
+              className="bg-blue-900 bg-opacity-20 border border-blue-800 border-opacity-50 hover:border-blue-700 hover:border-opacity-50 rounded-lg p-6 transition group"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <Package className="w-5 h-5 text-slate-300 group-hover:text-white transition" />
+                <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-slate-300 transition transform group-hover:translate-x-1" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-1">
+                Products
+              </h3>
+              <p className="text-slate-400 text-sm">
+                Manage your products
+              </p>
+            </a>
+
+            {/* Action 2 */}
+            
+              <a href="/dashboard/orders"
+              className="bg-green-900 bg-opacity-20 border border-green-800 border-opacity-50 hover:border-green-700 hover:border-opacity-50 rounded-lg p-6 transition group"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <ShoppingCart className="w-5 h-5 text-slate-300 group-hover:text-white transition" />
+                <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-slate-300 transition transform group-hover:translate-x-1" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-1">
+                Orders
+              </h3>
+              <p className="text-slate-400 text-sm">
+                View all orders
+              </p>
+            </a>
+
+            {/* Action 3 */}
+            
+             <a href="/dashboard/settings"
+              className="bg-purple-900 bg-opacity-20 border border-purple-800 border-opacity-50 hover:border-purple-700 hover:border-opacity-50 rounded-lg p-6 transition group"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <Settings className="w-5 h-5 text-slate-300 group-hover:text-white transition" />
+                <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-slate-300 transition transform group-hover:translate-x-1" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-1">
+                Settings
+              </h3>
+              <p className="text-slate-400 text-sm">
+                Configure your shop
+              </p>
+            </a>
+          </div>
+        </div>
+
+        {/* Shop Info & Addresses */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Shop Info */}
+          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+            <div className="border-b border-slate-800 px-6 py-4 bg-slate-800 bg-opacity-50">
+              <h2 className="text-lg font-bold text-white">
+                Shop Information
+              </h2>
+            </div>
+            <div className="divide-y divide-slate-800">
+              <div className="px-6 py-4 flex justify-between items-center">
+                <span className="text-slate-400 font-medium">
+                  Shop Name
+                </span>
+                <span className="text-white font-semibold">
+                  {shop.publicName}
+                </span>
+              </div>
+              <div className="px-6 py-4 flex justify-between items-center">
+                <span className="text-slate-400 font-medium">
+                  Shop Slug
+                </span>
+                <code className="text-emerald-400 font-mono text-sm bg-slate-800 px-3 py-1 rounded">
+                  {shop.slug}
+                </code>
+              </div>
+              <div className="px-6 py-4 flex justify-between items-center">
+                <span className="text-slate-400 font-medium">
+                  Status
+                </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                  <span className="text-emerald-400 font-medium">
+                    Active
+                  </span>
                 </div>
-                <div className="px-6 py-3 flex justify-between items-center text-sm">
-                  <span className="text-slate-400">Slug</span>
-                  <span className="text-white font-mono text-xs">{shop.slug}</span>
-                </div>
-                <div className="px-6 py-3 flex justify-between items-center text-sm">
-                  <span className="text-slate-400">Status</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                    <span className="text-emerald-400">Active</span>
-                  </div>
-                </div>
-                <div className="px-6 py-3 flex justify-between items-center text-sm">
-                  <span className="text-slate-400">Bot</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                    <span className="text-emerald-400">Online</span>
-                  </div>
+              </div>
+              <div className="px-6 py-4 flex justify-between items-center">
+                <span className="text-slate-400 font-medium">
+                  Bot Status
+                </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                  <span className="text-emerald-400 font-medium">
+                    Online
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Addresses - Right Side */}
-          <div>
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg h-full">
-              <div className="px-6 py-4 border-b border-slate-700">
-                <h2 className="text-sm font-semibold text-white">Addresses</h2>
-              </div>
-              <div className="divide-y divide-slate-700">
-                {/* Bitcoin */}
+          {/* Crypto Addresses */}
+          <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+            <div className="border-b border-slate-800 px-6 py-4 bg-slate-800 bg-opacity-50">
+              <h2 className="text-lg font-bold text-white">
+                Payment Addresses
+              </h2>
+            </div>
+            <div className="divide-y divide-slate-800">
+              {shop.btcAddress ? (
                 <div className="px-6 py-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Bitcoin className="w-4 h-4 text-orange-400" />
-                    <span className="text-xs font-medium text-slate-400">Bitcoin</span>
+                    <div className="w-4 h-4 bg-orange-500 rounded"></div>
+                    <span className="text-xs font-medium text-slate-400">
+                      Bitcoin
+                    </span>
                   </div>
-                  {shop.btcAddress ? (
-                    <div className="flex items-start gap-2">
-                      <span className="text-xs font-mono text-white break-all flex-1">
-                        {shop.btcAddress.slice(0, 12)}...
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(shop.btcAddress || '', 'btc')}
-                        className="p-1 hover:bg-slate-700 rounded transition"
-                        title="Copy"
-                      >
-                        {copied === 'btc' ? (
-                          <CheckCircle className="w-3 h-3 text-emerald-400" />
-                        ) : (
-                          <Copy className="w-3 h-3 text-slate-500 hover:text-slate-300" />
-                        )}
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-slate-500">Not set</span>
-                  )}
-                </div>
-
-                {/* Ethereum */}
-                <div className="px-6 py-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Coins className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs font-medium text-slate-400">Ethereum</span>
-                  </div>
-                  {shop.ethAddress ? (
-                    <div className="flex items-start gap-2">
-                      <span className="text-xs font-mono text-white break-all flex-1">
-                        {shop.ethAddress.slice(0, 12)}...
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(shop.ethAddress || '', 'eth')}
-                        className="p-1 hover:bg-slate-700 rounded transition"
-                        title="Copy"
-                      >
-                        {copied === 'eth' ? (
-                          <CheckCircle className="w-3 h-3 text-emerald-400" />
-                        ) : (
-                          <Copy className="w-3 h-3 text-slate-500 hover:text-slate-300" />
-                        )}
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-slate-500">Not set</span>
-                  )}
-                </div>
-
-                {/* Slug */}
-                <div className="px-6 py-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Zap className="w-4 h-4 text-blue-400" />
-                    <span className="text-xs font-medium text-slate-400">Shop ID</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs font-mono text-white flex-1">
-                      {shop.slug}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-mono text-slate-300 truncate">
+                      {shop.btcAddress}
                     </span>
                     <button
-                      onClick={() => copyToClipboard(shop.slug, 'slug')}
-                      className="p-1 hover:bg-slate-700 rounded transition"
-                      title="Copy"
+                      onClick={() => copyToClipboard(shop.btcAddress || '', 'btc')}
+                      className="p-1 hover:bg-slate-700 rounded transition flex-shrink-0"
                     >
-                      {copied === 'slug' ? (
-                        <CheckCircle className="w-3 h-3 text-emerald-400" />
+                      {copied === 'btc' ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
                       ) : (
-                        <Copy className="w-3 h-3 text-slate-500 hover:text-slate-300" />
+                        <Copy className="w-4 h-4 text-slate-500 hover:text-slate-300" />
                       )}
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
+              ) : null}
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-            <p className="text-slate-400 text-xs mb-1">Total Orders</p>
-            <p className="text-white text-xl font-bold">0</p>
-          </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-            <p className="text-slate-400 text-xs mb-1">Revenue</p>
-            <p className="text-white text-xl font-bold">€0.00</p>
-          </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-            <p className="text-slate-400 text-xs mb-1">Active Products</p>
-            <p className="text-white text-xl font-bold">0</p>
-          </div>
-          <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-            <p className="text-slate-400 text-xs mb-1">Conversion</p>
-            <p className="text-white text-xl font-bold">0%</p>
+              {shop.ethAddress ? (
+                <div className="px-6 py-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                    <span className="text-xs font-medium text-slate-400">
+                      Ethereum
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-mono text-slate-300 truncate">
+                      {shop.ethAddress}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(shop.ethAddress || '', 'eth')}
+                      className="p-1 hover:bg-slate-700 rounded transition flex-shrink-0"
+                    >
+                      {copied === 'eth' ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-slate-500 hover:text-slate-300" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {shop.ltcAddress ? (
+                <div className="px-6 py-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                    <span className="text-xs font-medium text-slate-400">
+                      Litecoin
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-mono text-slate-300 truncate">
+                      {shop.ltcAddress}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(shop.ltcAddress || '', 'ltc')}
+                      className="p-1 hover:bg-slate-700 rounded transition flex-shrink-0"
+                    >
+                      {copied === 'ltc' ? (
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-slate-500 hover:text-slate-300" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {!shop.btcAddress && !shop.ethAddress && !shop.ltcAddress ? (
+                <div className="px-6 py-4">
+                  <p className="text-slate-400 text-sm">
+                    No payment addresses configured yet.{' '}
+                    <a href="/dashboard/settings" className="text-emerald-400 hover:text-emerald-300">
+                      Add them in Settings →
+                    </a>
+                  </p>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </main>

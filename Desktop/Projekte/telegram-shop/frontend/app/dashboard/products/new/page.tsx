@@ -15,6 +15,7 @@ export default function CreateProductPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isDigital, setIsDigital] = useState(false);
+  const [unit, setUnit] = useState('PIECE');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -99,6 +100,7 @@ export default function CreateProductPage() {
             currency: 'EUR',
             isDigital,
             stockQuantity,
+            unit,
             isActive: true,
             tiers: tiers.map((t) => ({
               minQuantity: t.minQuantity,
@@ -210,6 +212,7 @@ export default function CreateProductPage() {
                         : 'bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-600'
                     }`}
                   >
+                    
                     Physical
                   </button>
                   <button
@@ -245,6 +248,27 @@ export default function CreateProductPage() {
               )}
             </div>
           </div>
+
+            <div>
+              <label className="block text-slate-300 text-sm font-medium mb-2">
+                Unit
+              </label>
+              <select
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded focus:outline-none focus:border-emerald-600"
+              >
+                <option value="PIECE">Piece</option>
+                <option value="GRAM">Gram</option>
+                <option value="KG">Kilogram</option>
+                <option value="ML">Milliliter</option>
+                <option value="L">Liter</option>
+                <option value="TABLET">Tablet</option>
+                <option value="PILL">Pill</option>
+                <option value="BOX">Box</option>
+                <option value="PACK">Pack</option>
+              </select>
+            </div>
 
           {/* Tiered Pricing Section */}
           <div className="bg-slate-900 border border-slate-800 rounded-lg p-8">

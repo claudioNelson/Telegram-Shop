@@ -32,6 +32,18 @@ enum PaymentStatus {
   CANCELLED
 }
 
+enum ProductUnit {
+  PIECE
+  GRAM
+  KG
+  ML
+  L
+  TABLET
+  PILL
+  BOX
+  PACK
+}
+
 // ============ USERS (für Admin-Panel) ============
 model User {
   id             Int            @id @default(autoincrement())
@@ -135,6 +147,7 @@ model Product {
   priceCents    Int       // In Cents (z.B. 1999 = 19,99€)
   currency      String    @default("EUR")
   isDigital     Boolean   @default(false)
+  unit          ProductUnit @default(PIECE)
   stockQuantity Int?      // nullable für digitale Produkte
   isActive      Boolean   @default(true)
   imageUrl      String?
