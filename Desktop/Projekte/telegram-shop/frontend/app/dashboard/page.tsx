@@ -289,7 +289,7 @@ export default function DashboardPage() {
                     </span>
                     <button
                       onClick={() => copyToClipboard(shop.btcAddress || '', 'btc')}
-                      className="p-1 hover:bg-slate-700 rounded transition flex-shrink-0"
+                      className="p-1 hover:bg-slate-700 rounded transition shrink-0"
                     >
                       {copied === 'btc' ? (
                         <CheckCircle className="w-4 h-4 text-emerald-400" />
@@ -315,7 +315,7 @@ export default function DashboardPage() {
                     </span>
                     <button
                       onClick={() => copyToClipboard(shop.ethAddress || '', 'eth')}
-                      className="p-1 hover:bg-slate-700 rounded transition flex-shrink-0"
+                      className="p-1 hover:bg-slate-700 rounded transition shrink-0"
                     >
                       {copied === 'eth' ? (
                         <CheckCircle className="w-4 h-4 text-emerald-400" />
@@ -341,7 +341,7 @@ export default function DashboardPage() {
                     </span>
                     <button
                       onClick={() => copyToClipboard(shop.ltcAddress || '', 'ltc')}
-                      className="p-1 hover:bg-slate-700 rounded transition flex-shrink-0"
+                      className="p-1 hover:bg-slate-700 rounded transition shrink-0"
                     >
                       {copied === 'ltc' ? (
                         <CheckCircle className="w-4 h-4 text-emerald-400" />
