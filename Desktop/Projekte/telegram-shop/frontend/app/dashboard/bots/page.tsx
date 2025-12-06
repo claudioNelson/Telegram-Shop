@@ -2,191 +2,181 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft, Plus, Edit2, Trash2, Circle } from 'lucide-react';
 
 interface Bot {
   id: number;
-  name: string;
+  name?: string;
+  telegramBotToken: string;
   telegramBotUsername: string;
+  welcomeMessage: string;
   isActive: boolean;
   createdAt: string;
 }
 
 export default function BotsPage() {
-  const router = useRouter();
   const [bots, setBots] = useState<Bot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [shopId, setShopId] = useState<number | null>(null);
+  const [shop, setShop] = useState<any>(null);
+  const router = useRouter();
 
   useEffect(() => {
+    fetchBotsAndShop();
+  }, []);
+
+  const fetchBotsAndShop = async () => {
     const token = localStorage.getItem('accessToken');
-    
     if (!token) {
       router.push('/login');
       return;
     }
 
-    fetchData(token);
-  }, [router]);
-
-  const fetchData = async (token: string) => {
     try {
-      // Hole Shop
       const shopRes = await fetch('http://localhost:3001/api/shops/me', {
-        method: 'GET',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (!shopRes.ok) {
-        console.error('Shop response:', shopRes.status);
-        if (shopRes.status === 401) {
-          localStorage.clear();
-          router.push('/login');
-          return;
-        }
-        throw new Error(`Failed to fetch shop (${shopRes.status})`);
-      }
-
       const shopData = await shopRes.json();
-      setShopId(shopData.id);
+      setShop(shopData);
 
-      // Hole Bots
       const botsRes = await fetch(
         `http://localhost:3001/api/shops/${shopData.id}/bots`,
-        {
-          method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      if (!botsRes.ok) {
-        console.error('Bots response:', botsRes.status);
-        throw new Error(`Failed to fetch bots (${botsRes.status})`);
-      }
-
       const botsData = await botsRes.json();
-
-      // botsData könnte ein Array oder einzeln sein
-      if (Array.isArray(botsData)) {
-        setBots(botsData);
-      } else if (botsData && typeof botsData === 'object') {
-        setBots([botsData]);
-      } else {
-        setBots([]);
-      }
-    } catch (err: any) {
-      console.error('Error fetching data:', err);
-      setError(err.message || 'Error loading bots');
+      setBots(Array.isArray(botsData) ? botsData : []);
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Failed to load bots');
       setBots([]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDelete = async (botId: number) => {
+    if (!confirm('Delete this bot?')) return;
+
+    const token = localStorage.getItem('accessToken');
+    try {
+      await fetch(`http://localhost:3001/api/shops/${shop.id}/bots/${botId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBots(bots.filter((b) => b.id !== botId));
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Failed to delete bot');
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Loading bots...</p>
-        </div>
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <p className="text-slate-400">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">🤖 Bot Manager</h1>
+    <div className="min-h-screen bg-slate-950 p-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push('/dashboard/bots/create')}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              onClick={() => router.push('/dashboard')}
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded transition"
             >
-              + Neuen Bot erstellen
+              <ArrowLeft size={20} />
             </button>
+            <h1 className="text-2xl font-bold text-white">Telegram Bots</h1>
           </div>
+          <button
+            onClick={() => router.push('/dashboard/bots/new')}
+            className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded transition"
+          >
+            <Plus size={18} />
+            New Bot
+          </button>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
         {error && (
-          <div className="mb-6 p-4 bg-red-100 text-red-800 rounded-lg">
+          <div className="bg-red-900 border border-red-800 text-red-100 px-4 py-3 rounded mb-6">
             {error}
           </div>
         )}
 
         {bots.length === 0 ? (
-          <div className="bg-white p-12 rounded-lg shadow text-center">
-            <p className="text-gray-600 mb-6">
-              Du hast noch keinen Telegram Bot erstellt.
-            </p>
-            <button
-              onClick={() => router.push('/dashboard/bots/create')}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-            >
-              Bot jetzt erstellen
-            </button>
+          <div className="bg-slate-900 border border-slate-800 rounded-lg p-12 text-center">
+            <div className="mb-4">
+              <div className="text-4xl mb-4">🤖</div>
+              <p className="text-slate-400 mb-6">No bots created yet</p>
+              <button
+                onClick={() => router.push('/dashboard/bots/new')}
+                className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-2 rounded transition"
+              >
+                <Plus size={18} />
+                Create your first bot
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="grid gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {bots.map((bot) => (
-              <div key={bot.id} className="bg-white p-6 rounded-lg shadow">
-                <div className="flex justify-between items-start">
+              <div
+                key={bot.id}
+                className="bg-slate-900 border border-slate-800 rounded-lg p-6 hover:border-slate-700 transition"
+              >
+                <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h2 className="text-2xl font-bold">{bot.name}</h2>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          bot.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {bot.isActive ? '🟢 Online' : '🔴 Offline'}
-                      </span>
+                      <h3 className="text-lg font-bold text-white">
+                        {bot.name || bot.telegramBotUsername}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <Circle
+                          size={8}
+                          className="fill-emerald-500 text-emerald-500"
+                        />
+                        <span className="text-xs text-emerald-400 font-medium">
+                          {bot.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
                     </div>
-
-                    <p className="text-gray-600 mb-4">
-                      <strong>Bot-Username:</strong>{' '}
-                      <code className="bg-gray-100 px-2 py-1 rounded">
-                        @{bot.telegramBotUsername}
-                      </code>
-                    </p>
-
-                    <p className="text-sm text-gray-500">
-                      Erstellt:{' '}
-                      {new Date(bot.createdAt).toLocaleDateString('de-DE')}
+                    <p className="text-slate-400 text-sm mb-3">
+                      @{bot.telegramBotUsername}
                     </p>
                   </div>
+                </div>
 
-                  <div className="flex gap-2">
-                    <a
-                      href={`https://t.me/${bot.telegramBotUsername}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                    >
-                      🔗 Bot öffnen
-                    </a>
-                    <button
-                      onClick={() =>
-                        router.push(`/dashboard/bots/${bot.id}/edit`)
-                      }
-                      className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400"
-                    >
-                      ✏️ Bearbeiten
-                    </button>
-                  </div>
+                <div className="bg-slate-800 rounded-lg p-4 mb-4">
+                  <p className="text-slate-400 text-xs font-medium mb-2">
+                    Welcome Message
+                  </p>
+                  <p className="text-white text-sm line-clamp-2">
+                    {bot.welcomeMessage}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-4">
+                  <span>Created {new Date(bot.createdAt).toLocaleDateString()}</span>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => router.push(`/dashboard/bots/${bot.id}/edit`)}
+                    className="flex-1 flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded transition font-medium"
+                  >
+                    <Edit2 size={16} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(bot.id)}
+                    className="flex items-center justify-center gap-2 bg-red-900 hover:bg-red-800 text-red-100 px-4 py-2 rounded transition font-medium"
+                  >
+                    <Trash2 size={16} />
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}

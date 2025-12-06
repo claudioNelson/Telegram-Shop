@@ -11,6 +11,7 @@ import {
   Copy,
   CheckCircle,
   ArrowRight,
+  Bot,
 } from 'lucide-react';
 
 interface Shop {
@@ -164,8 +165,8 @@ export default function DashboardPage() {
           <h2 className="text-xl font-bold text-white mb-6">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Action 1 */}
-            
-              <a href="/dashboard/products"
+
+            <a href="/dashboard/products"
               className="bg-blue-900 bg-opacity-20 border border-blue-800 border-opacity-50 hover:border-blue-700 hover:border-opacity-50 rounded-lg p-6 transition group"
             >
               <div className="flex items-start justify-between mb-4">
@@ -181,8 +182,8 @@ export default function DashboardPage() {
             </a>
 
             {/* Action 2 */}
-            
-              <a href="/dashboard/orders"
+
+            <a href="/dashboard/orders"
               className="bg-green-900 bg-opacity-20 border border-green-800 border-opacity-50 hover:border-green-700 hover:border-opacity-50 rounded-lg p-6 transition group"
             >
               <div className="flex items-start justify-between mb-4">
@@ -198,8 +199,8 @@ export default function DashboardPage() {
             </a>
 
             {/* Action 3 */}
-            
-             <a href="/dashboard/settings"
+
+            <a href="/dashboard/settings"
               className="bg-purple-900 bg-opacity-20 border border-purple-800 border-opacity-50 hover:border-purple-700 hover:border-opacity-50 rounded-lg p-6 transition group"
             >
               <div className="flex items-start justify-between mb-4">
@@ -213,6 +214,18 @@ export default function DashboardPage() {
                 Configure your shop
               </p>
             </a>
+
+            <a href="/dashboard/bots"
+              className="bg-indigo-900 bg-opacity-20 border border-indigo-800 border-opacity-50 hover:border-indigo-700 hover:border-opacity-50 rounded-lg p-6 transition group"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <Bot className="w-5 h-5 text-slate-300 group-hover:text-white transition" />
+                <ArrowRight className="w-5 h-5 text-slate-500 group-hover:text-slate-300 transition" />
+              </div>
+              <h3 className="text-white font-bold text-lg mb-1">Bots</h3>
+              <p className="text-slate-400 text-sm">Manage your Telegram bots</p>
+            </a>
+
           </div>
         </div>
 
